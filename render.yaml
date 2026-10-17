@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: redsea-api
+    runtime: node
+    plan: starter
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    disk:
+      name: redsea-sqlite
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: USE_SQLITE
+        value: "true"
+      - key: DB_PATH
+        value: /var/data/redsea_brokerage.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ROOT_USERNAME
+        value: root
+      - key: ROOT_PASSWORD
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false

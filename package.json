@@ -1,0 +1,33 @@
+{
+  "name": "redsea-brokerage-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev-stable": "vite --config vite.config.stable.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "npm run dev",
+    "clean": "rimraf dist .vite node_modules/.vite",
+    "rebuild": "npm run clean && npm install && npm run build"
+  },
+  "dependencies": {
+    "dompurify": "^3.0.8",
+    "firebase": "^13.0.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "tesseract.js": "^7.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.8"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}

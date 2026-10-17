@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "REDSEA - Commission & Brokerage Platform",
+  "short_name": "REDSEA",
+  "description": "REDSEA commission, brokerage, and business services platform.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#8b0000",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/redsea-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
