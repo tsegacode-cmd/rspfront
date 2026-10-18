@@ -1,0 +1,91 @@
+.agent-wallet-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, .62);
+}
+
+.agent-wallet-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 660px);
+  max-height: min(92vh, 900px);
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+  color: #243247;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+}
+
+.agent-wallet-modal > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  background: #9d142d;
+  color: #fff;
+}
+
+.agent-wallet-modal > header p {
+  margin: 0 0 4px;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  opacity: .8;
+}
+
+.agent-wallet-modal > header h2 { margin: 0; font-size: 1.2rem; }
+.agent-wallet-close { border: 0; background: transparent; color: #fff; font-size: 1.8rem; cursor: pointer; }
+.agent-wallet-modal-body { overflow-y: auto; padding: 18px 22px; }
+.agent-wallet-modal form { display: grid; gap: 12px; }
+.agent-wallet-modal form > label { display: grid; gap: 6px; font-size: .84rem; font-weight: 700; }
+.agent-wallet-modal input:not([type="radio"]):not([type="file"]), .agent-wallet-modal select, .agent-wallet-modal textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d6dee8;
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: #fbfcfe;
+  color: #243247;
+  font: inherit;
+}
+.agent-wallet-agent-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: -6px; }
+.agent-wallet-presence { display: inline-flex; align-items: center; gap: 6px; color: #64748b; font-size: .78rem; font-weight: 750; }
+.agent-wallet-presence > span { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #94a3b8; }
+.agent-wallet-presence.online { color: #16804a; }
+.agent-wallet-presence.online > span { background: #22a35a; box-shadow: 0 0 0 3px rgba(34, 163, 90, .14); }
+.agent-wallet-account-status { padding: 3px 8px; border-radius: 999px; background: #fff0f1; color: #a11925; font-size: .7rem; font-weight: 750; }
+.agent-wallet-account-status.active { background: #e7f8ed; color: #17683b; }
+.agent-wallet-modal textarea { min-height: 72px; resize: vertical; }
+.agent-wallet-modal fieldset { display: flex; flex-wrap: wrap; gap: 14px; border: 1px solid #e1e6ed; border-radius: 9px; }
+.agent-wallet-modal fieldset label { display: flex; align-items: center; gap: 6px; font-size: .85rem; }
+.agent-wallet-destination { border-left: 4px solid #9d142d; border-radius: 6px; padding: 10px 12px; background: #fff4f5; }
+.agent-wallet-destination p { margin: 5px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent-wallet-fee { margin: -4px 0 0; color: #52647a; font-size: .83rem; }
+.agent-wallet-modal form > button { border: 0; border-radius: 8px; padding: 11px 14px; background: #9d142d; color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+.agent-wallet-modal form > button:disabled { opacity: .6; cursor: not-allowed; }
+.agent-wallet-receipt-preview { width: min(100%, 280px); max-height: 180px; object-fit: contain; border: 1px solid #e1e6ed; border-radius: 8px; }
+.agent-wallet-feedback { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; }
+.agent-wallet-feedback.error { background: #fff0f1; color: #a11925; }
+.agent-wallet-feedback.success { background: #e7f8ed; color: #17683b; }
+.agent-wallet-request-history { margin-top: 22px; }
+.agent-wallet-request-history h3 { margin: 0 0 8px; font-size: 1rem; }
+.agent-wallet-request-history > p { color: #718096; }
+.agent-wallet-request-history article { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #edf0f4; }
+.agent-wallet-request-history article > span { display: grid; gap: 4px; }
+.agent-wallet-request-history small { color: #718096; overflow-wrap: anywhere; }
+.agent-wallet-status { flex-shrink: 0; padding: 4px 8px; border-radius: 20px; background: #fff3d8; color: #80510b; font-size: .75rem; text-transform: capitalize; }
+.agent-wallet-status.approved { background: #e7f8ed; color: #17683b; }
+.agent-wallet-status.rejected { background: #fff0f1; color: #a11925; }
+.agent-wallet-view-receipt { display: block; margin-top: 6px; border: 0; background: transparent; color: #9d142d; font: inherit; font-size: .77rem; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+@media (max-width: 540px) {
+  .agent-wallet-modal-backdrop { padding: 8px; }
+  .agent-wallet-modal-body { padding: 14px; }
+  .agent-wallet-modal > header { padding: 14px; }
+}
