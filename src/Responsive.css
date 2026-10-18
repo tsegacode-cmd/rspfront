@@ -1,0 +1,617 @@
+/* Shared responsive layout rules used across public, staff, and admin pages. */
+#root,
+.layout,
+.main-content,
+main {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.main-content > *,
+main > * {
+  min-width: 0;
+}
+
+img,
+video,
+canvas,
+table {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.table-responsive,
+.data-table-wrap,
+.table-wrap,
+[class*="table-wrap"] {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1024px) {
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .page-header {
+    padding: 20px 14px 14px;
+    margin-bottom: 12px;
+  }
+
+  .page-header h1 {
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+  }
+
+  .content-section {
+    padding: 12px 0;
+  }
+
+  .card,
+  .feature-card,
+  .service-card,
+  .partnership-card,
+  .tier-card,
+  .stat-card,
+  .activity-section,
+  .quick-actions,
+  .service-request-card,
+  .root-service-product-card {
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .grid,
+  .partnership-grid,
+  .process-steps,
+  .cp-stats-row,
+  .cp-form-grid {
+    gap: 12px;
+    margin: 12px 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-link {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .page,
+  .main-content,
+  .content-section {
+    min-width: 0;
+  }
+
+  .page-header {
+    padding: 14px 10px 10px;
+    margin-bottom: 8px;
+  }
+
+  .page-header h1 {
+    font-size: clamp(1.35rem, 5vw, 1.8rem);
+    line-height: 1.2;
+  }
+
+  .page-header p {
+    font-size: .92rem;
+  }
+
+  .content-section {
+    padding: 8px 0;
+  }
+
+  .card,
+  .feature-card,
+  .service-card,
+  .partnership-card,
+  .tier-card,
+  .stat-card,
+  .activity-section,
+  .quick-actions,
+  .service-request-card,
+  .root-service-product-card {
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  .grid,
+  .partnership-grid,
+  .process-steps,
+  .cp-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin: 8px 0;
+  }
+
+  .cp-stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .hero-buttons {
+    gap: 8px;
+  }
+
+  .hero-buttons > * {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .data-table,
+  .finance-table,
+  .earnings-list,
+  .profile-list,
+  .settings-table {
+    max-width: 100%;
+  }
+
+  .hero {
+    min-height: 0;
+    padding: clamp(24px, 6vw, 40px) 12px;
+  }
+
+  .hero-content h1,
+  .hero h1 {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+  }
+
+  .services-overview {
+    padding: 20px 12px;
+  }
+
+  .data-collect-page .data-hero {
+    padding: clamp(28px, 7vw, 48px) 12px;
+  }
+
+  .data-collect-page .hero-title {
+    font-size: clamp(1.55rem, 6vw, 2rem);
+  }
+
+  .data-collect-page .hero-subtitle {
+    font-size: .92rem;
+  }
+
+  .data-collect-page .ebc-open-btn {
+    gap: 8px;
+    padding: 12px 20px;
+    font-size: .95rem;
+  }
+
+  .data-collect-page .intro-card,
+  .data-collect-page .benefits-section,
+  .data-collect-page .cta-card {
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  .data-collect-page .cta-section {
+    margin-top: 24px;
+  }
+
+  .data-collect-page .benefits-header {
+    margin-bottom: 16px;
+  }
+
+  .data-collect-page .feature-card {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .dc-modal-overlay.ebc-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow: hidden;
+  }
+
+  .dc-modal.ebc-modal {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .page-header {
+    padding: 12px 8px 8px;
+  }
+
+  .page-header h1 {
+    font-size: clamp(1.25rem, 6vw, 1.55rem);
+  }
+
+  .page-header p {
+    font-size: .88rem;
+  }
+
+  .card,
+  .feature-card,
+  .service-card,
+  .partnership-card,
+  .tier-card,
+  .stat-card,
+  .activity-section,
+  .quick-actions,
+  .service-request-card,
+  .root-service-product-card {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .grid,
+  .partnership-grid,
+  .process-steps,
+  .cp-form-grid {
+    gap: 8px;
+  }
+
+  .cp-stats-row {
+    gap: 6px;
+  }
+
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-link {
+    padding: 9px 12px;
+    font-size: .88rem;
+  }
+}
+
+:is(
+  .modal-overlay,
+  .dc-modal-overlay,
+  .gu-overlay,
+  .up-modal-overlay,
+  .promo-overlay,
+  .booking-payment-overlay,
+  .booking-bank-payment-overlay,
+  .service-product-modal-overlay,
+  .service-product-detail-overlay,
+  .shb-popup-overlay,
+  .permission-dialog-overlay,
+  .social-popup-overlay,
+  .install-app-overlay,
+  .logout-confirm-overlay,
+  .ruc-receipt-overlay,
+  .root-utility-receipt-overlay,
+  .promotion-popup-backdrop,
+  .qr-scanner-backdrop,
+  .result-modal-backdrop,
+  .result-editor-backdrop
+) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    max(12px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  backdrop-filter: blur(3px);
+}
+
+.dashboard-content .modal-overlay {
+  align-items: center;
+}
+
+@media (min-width: 1025px) {
+  .header .profile-dropdown {
+    max-height: min(72dvh, 580px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .header .profile-dropdown-header {
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .header .profile-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1.8rem;
+  }
+
+  .header .profile-info {
+    gap: 2px;
+  }
+
+  .header .profile-name {
+    font-size: .98rem;
+  }
+
+  .header .profile-email {
+    font-size: .76rem;
+  }
+
+  .header .profile-dropdown-item {
+    min-height: 0;
+    gap: 9px;
+    padding: 9px 14px;
+    font-size: .84rem;
+    line-height: 1.25;
+  }
+
+  .header .dropdown-icon {
+    width: 20px;
+    font-size: 1rem;
+  }
+
+  .layout .second-header-bar {
+    padding: 3px 10px;
+  }
+
+  .layout .shb-item {
+    gap: 1px;
+    padding: 3px 4px;
+    border-radius: 7px;
+  }
+
+  .layout .shb-icon {
+    font-size: 1rem;
+  }
+
+  .layout .shb-label {
+    font-size: .62rem;
+  }
+
+  .layout .shb-account-badge {
+    min-height: 26px;
+    padding: 2px 7px;
+    font-size: .7rem;
+  }
+
+  .layout .shb-account-badge > span,
+  .layout .shb-account-badge img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .main-content .page-header {
+    padding: 18px 14px 12px;
+    margin-bottom: 12px;
+  }
+
+  .main-content .page-header h1 {
+    font-size: clamp(1.55rem, 2.4vw, 2rem);
+    margin-bottom: 5px;
+  }
+
+  .main-content .content-section {
+    padding: 14px 0;
+  }
+
+  .main-content .card,
+  .main-content .feature-card,
+  .main-content .service-card,
+  .main-content .partnership-card,
+  .main-content .tier-card,
+  .main-content .stat-card,
+  .main-content .activity-section,
+  .main-content .quick-actions,
+  .main-content .service-request-card,
+  .main-content .root-service-product-card {
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .main-content .hero {
+    min-height: 200px;
+    padding: 28px 20px;
+  }
+
+  .main-content .hero-content h1 {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+
+  .main-content .hero-subtitle {
+    font-size: 1.05rem;
+    margin-bottom: 6px;
+  }
+
+  .main-content .hero-description {
+    margin-bottom: 12px;
+  }
+
+  .main-content .hero-buttons {
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .main-content .services-overview,
+  .main-content .why-choose,
+  .main-content .partnership-section {
+    padding: 24px 18px;
+  }
+
+  .main-content .section-title {
+    font-size: 1.7rem;
+    margin-bottom: 16px;
+  }
+
+  .main-content .service-card {
+    min-height: 190px;
+    padding: 18px 14px;
+  }
+
+  .main-content .service-icon {
+    width: 46px;
+    height: 46px;
+    margin-bottom: 10px;
+    border-radius: 14px;
+    font-size: 1.7rem;
+  }
+
+  .main-content .cta-section {
+    padding: 28px 18px;
+  }
+
+  .main-content .cta-content h2 {
+    font-size: 1.7rem;
+    margin-bottom: 8px;
+  }
+
+  .main-content .cta-content p {
+    margin-bottom: 14px;
+  }
+
+  .main-content .data-collect-page .data-hero {
+    padding: 64px 20px 58px;
+  }
+
+  .main-content .data-collect-page .hero-badge {
+    margin-bottom: 18px;
+  }
+
+  .main-content .data-collect-page .hero-title {
+    font-size: 2.7rem;
+    margin-bottom: 12px;
+  }
+
+  .main-content .data-collect-page .hero-subtitle {
+    margin-bottom: 24px;
+  }
+
+  .main-content .data-collect-page .data-content {
+    padding: 44px 20px;
+  }
+
+  .main-content .data-collect-page .intro-card {
+    gap: 22px;
+    padding: 26px;
+    margin-bottom: 40px;
+  }
+
+  .main-content .data-collect-page .features-section,
+  .main-content .data-collect-page .benefits-section {
+    margin-bottom: 40px;
+  }
+
+  .main-content .data-collect-page .section-header {
+    margin-bottom: 32px;
+  }
+
+  .main-content .data-collect-page .section-title {
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+
+  .main-content .data-collect-page .features-grid,
+  .main-content .data-collect-page .benefits-grid {
+    gap: 18px;
+  }
+
+  .main-content .data-collect-page .feature-card {
+    padding: 22px;
+  }
+
+  .main-content .data-collect-page .benefits-section {
+    padding: 36px 28px;
+  }
+
+  .main-content .data-collect-page .benefits-header {
+    margin-bottom: 28px;
+  }
+
+  .main-content .data-collect-page .cta-section {
+    margin-top: 40px;
+  }
+
+  .main-content .data-collect-page .cta-card {
+    padding: 42px 34px;
+  }
+
+  .main-content .data-collect-page .cta-title {
+    font-size: 2rem;
+    margin-bottom: 12px;
+  }
+
+  .main-content .data-collect-page .cta-description {
+    margin-bottom: 24px;
+  }
+
+  .cp-hero {
+    padding: 18px 20px;
+  }
+
+  .cp-hero-inner {
+    gap: 14px;
+  }
+
+  .cp-hero-icon {
+    font-size: 2rem;
+  }
+
+  .cp-hero-inner h1 {
+    font-size: 1.5rem;
+    margin-bottom: 3px;
+  }
+
+  .cp-hero-btn {
+    padding: 8px 18px;
+    font-size: .88rem;
+  }
+
+  .cp-container {
+    padding: 12px 16px 22px;
+  }
+
+  .cp-stats-row {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .cp-stat {
+    padding: 12px;
+  }
+
+  .cp-form-card {
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .cp-form-header {
+    margin-bottom: 12px;
+  }
+
+  .cp-table-header {
+    padding: 12px 16px;
+  }
+
+  .cp-table th,
+  .cp-table td {
+    padding: 8px 10px;
+  }
+}

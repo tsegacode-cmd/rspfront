@@ -1,0 +1,364 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-color: #c41e3a;
+  --secondary-color: #8b0000;
+  --accent-color: #ff6b6b;
+  --text-dark: #2c3e50;
+  --text-light: #ecf0f1;
+  --bg-light: #ffffff;
+  --bg-gray: #f8f9fa;
+  --border-color: #dee2e6;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text-dark);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-x: clip;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.container,
+.page,
+.main-content,
+.content-section,
+.card,
+.feature-card,
+.service-card,
+.partnership-card,
+.tier-card,
+.step,
+.cta-content,
+.user-form,
+.commission-content,
+.permissions-content,
+.restore-content {
+  max-width: 100%;
+}
+
+.container {
+  max-width: 1100px;
+  padding: 0 14px;
+}
+
+.page-header {
+  padding: 26px 14px 18px;
+  margin-bottom: 18px;
+}
+
+.page-header h1 {
+  font-size: clamp(1.8rem, 2.8vw, 2.4rem);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.page-header p {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.content-section {
+  padding: 20px 0;
+}
+
+.card,
+.feature-card,
+.service-card,
+.partnership-card,
+.tier-card,
+.stat-card,
+.activity-section,
+.quick-actions,
+.service-request-card,
+.root-service-product-card {
+  padding: 18px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+}
+
+.card h2,
+.section-title,
+.cta-content h2 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  line-height: 1.25;
+}
+
+.card h3,
+.service-card h3,
+.feature-card h3,
+.step h3,
+.tier-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.card p,
+.card li,
+.section-description,
+.feature-card p,
+.service-card p,
+.step p,
+.tier-card li,
+.partnership-card p {
+  font-size: 0.94rem;
+  line-height: 1.6;
+}
+
+.grid,
+.partnership-grid,
+.process-steps,
+.cp-stats-row,
+.cp-form-grid {
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-link,
+button {
+  padding: 10px 18px;
+  font-size: 0.92rem;
+  border-radius: 8px;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+/* Mobile-first responsive images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Mobile touch optimization */
+@media (hover: none) and (pointer: coarse) {
+  button, a {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+@media (max-width: 768px) {
+  #root,
+  .layout,
+  .main-content,
+  .cp-page {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .main-content {
+    overflow-x: clip;
+  }
+
+  .cp-container {
+    width: 100%;
+    max-width: 100%;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .cp-stats-row,
+  .cp-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cp-table-wrap,
+  .table-responsive {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  .cp-stats-row,
+  .cp-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.page-header {
+  padding: 22px 14px 16px;
+  margin-bottom: 12px;
+}
+
+.content-section { padding: 14px 0; }
+.card { padding: 14px; margin-bottom: 12px; }
+
+.modal-overlay {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+}
+
+.modal-content {
+  width: min(96vw, 680px);
+  max-width: 680px;
+  max-height: calc(100dvh - 16px);
+  margin: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal-header {
+  padding: 10px 14px;
+}
+
+.modal-header h2 {
+  font-size: 1.15rem;
+}
+
+.user-form,
+.commission-content,
+.permissions-content,
+.restore-content {
+  padding: 10px 14px;
+}
+
+.data-table,
+.finance-table,
+.earnings-list,
+.profile-list,
+.settings-table,
+.table-responsive {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-main,
+.dashboard-content,
+.dashboard-header,
+.section-content,
+.root-service-category-content {
+  min-width: 0;
+}
+
+.card,
+.cp-stat,
+.cp-form-card,
+.stat-card,
+.activity-section,
+.quick-actions,
+.service-request-card,
+.root-service-product-card {
+  border-radius: 10px;
+}
+
+.section-title,
+.card h2 { font-size: 1.35rem; }
+.card h3 { font-size: 1.08rem; }
+.card p,
+.section-description { font-size: .9rem; line-height: 1.5; }
+
+@media (max-width: 768px) {
+  .layout > .header {
+    flex: 0 0 auto;
+  }
+
+  .page-header { padding: 16px 10px 12px; margin-bottom: 8px; }
+  .content-section { padding: 10px 0; }
+  .card { padding: 11px; margin-bottom: 9px; }
+
+  .modal-overlay {
+    align-items: flex-start;
+  }
+
+  .modal-content {
+    width: min(100%, 560px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 12px;
+  }
+
+  .modal-header {
+    padding: 10px 12px;
+  }
+
+  .user-form,
+  .commission-content,
+  .permissions-content,
+  .restore-content { padding: 9px 10px; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .modal-content { max-height: calc(100dvh - 10px); }
+}
+
+/* Keep dialogs within the visible screen and let long content scroll inside. */
+:where(
+  .modal-overlay,
+  .dc-modal-overlay,
+  .gu-overlay,
+  .up-modal-overlay,
+  .promo-overlay,
+  .booking-payment-overlay,
+  .booking-bank-payment-overlay,
+  .service-product-modal-overlay,
+  .service-product-detail-overlay,
+  .shb-popup-overlay,
+  .permission-dialog-overlay
+) {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+[role="dialog"][aria-modal="true"] {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  [role="dialog"][aria-modal="true"] {
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+}
