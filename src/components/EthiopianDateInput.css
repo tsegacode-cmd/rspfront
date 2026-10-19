@@ -1,0 +1,40 @@
+.ethiopian-date-input-wrapper {
+  width: 100%;
+}
+
+.ethiopian-date-input {
+  width: 100%;
+  padding: 6px 4px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  background: white;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.ethiopian-date-input:focus {
+  outline: none;
+  border-color: #c41e3a;
+  box-shadow: 0 0 0 2px rgba(196, 30, 58, 0.1);
+  background: #fff;
+}
+
+.ethiopian-date-input::placeholder {
+  color: #bdc3c7;
+  font-size: 0.75rem;
+}
+
+/* Calendar picker styling */
+.ethiopian-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 4px;
+  margin-right: 4px;
+  opacity: 0.6;
+  filter: invert(0.8);
+}
+
+.ethiopian-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}

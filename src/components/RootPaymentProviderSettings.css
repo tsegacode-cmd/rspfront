@@ -1,0 +1,52 @@
+.root-payment-settings { margin: 20px 0 26px; padding: 20px; border: 1px solid #dbe2ea; border-radius: 14px; background: #fff; }
+.root-payment-settings-heading h3 { margin: 0; color: #243447; font-size: 1.05rem; }
+.root-payment-settings-heading p { margin: 5px 0 16px; color: #667085; font-size: .83rem; }
+.root-payment-provider-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.root-payment-provider-card { display: grid; align-content: start; gap: 10px; min-width: 0; padding: 14px; border: 1px solid #e1e7ee; border-radius: 11px; }
+.root-payment-provider-card legend { padding: 0 6px; color: #243447; font-weight: 800; }
+.root-payment-provider-availability { display: grid; gap: 8px; padding: 10px; border-radius: 8px; background: #f8fafc; }
+.root-payment-provider-availability label { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #344054; cursor: pointer; font-size: .76rem; font-weight: 700; }
+.root-payment-provider-availability input { appearance: none; position: relative; width: 38px; height: 22px; flex: 0 0 auto; margin: 0; border: 1px solid #cbd5e1; border-radius: 999px; background: #cbd5e1; cursor: pointer; transition: background .15s ease; }
+.root-payment-provider-availability input::before { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; content: ''; transition: transform .15s ease; }
+.root-payment-provider-availability input:checked { border-color: #1769aa; background: #1769aa; }
+.root-payment-provider-availability input:checked::before { transform: translateX(16px); }
+.root-payment-provider-availability input:focus-visible { outline: 2px solid #1769aa; outline-offset: 2px; }
+.root-payment-provider-card > label { display: grid; gap: 5px; color: #344054; font-size: .77rem; font-weight: 700; }
+.root-payment-provider-card input:not([type="file"]):not([type="checkbox"]) { width: 100%; min-height: 36px; box-sizing: border-box; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 7px; color: #172033; font: inherit; font-weight: 400; }
+.root-payment-provider-card small { color: #667085; font-size: .7rem; font-weight: 400; line-height: 1.4; }
+.root-payment-provider-logo-area { display: flex; align-items: center; gap: 11px; }
+.root-payment-provider-logo-area > img,
+.root-payment-provider-logo-area > span { display: grid; width: 48px; height: 48px; flex: 0 0 auto; place-items: center; border-radius: 9px; background: #f1f5f9; color: #475569; font-size: 1.5rem; object-fit: contain; }
+.root-payment-provider-logo-area label { display: grid; gap: 5px; color: #344054; font-size: .77rem; font-weight: 700; }
+.root-payment-provider-logo-area input { max-width: 220px; font-size: .7rem; }
+.root-payment-accounts { display: grid; gap: 9px; margin-top: 4px; }
+.root-payment-accounts-heading,
+.root-payment-account-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #344054; font-size: .8rem; }
+.root-payment-account-actions { display: flex; align-items: center; gap: 8px; }
+.root-payment-account-channel-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.root-payment-account-visibility { display: inline-flex; align-items: center; gap: 6px; color: #475569; cursor: pointer; font-size: .7rem; font-weight: 700; white-space: nowrap; }
+.root-payment-account-visibility input { appearance: none; position: relative; width: 34px; height: 20px; flex: 0 0 auto; margin: 0; border: 1px solid #cbd5e1; border-radius: 999px; background: #cbd5e1; cursor: pointer; transition: background .15s ease; }
+.root-payment-account-visibility input::before { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; content: ''; transition: transform .15s ease; }
+.root-payment-account-visibility input:checked { border-color: #16834c; background: #16834c; }
+.root-payment-account-visibility input:checked::before { transform: translateX(14px); }
+.root-payment-account-visibility input:focus-visible { outline: 2px solid #1769aa; outline-offset: 2px; }
+.root-payment-provider-status { color: #a16207; font-size: .78rem; font-weight: 700; }
+.root-payment-provider-status.configured { color: #16834c; }
+.root-payment-chapa-methods { display: grid; gap: 8px; padding: 12px; border-radius: 8px; background: #f8fafc; }
+.root-payment-chapa-methods > strong { color: #27364b; font-size: .85rem; }
+.root-payment-chapa-methods > small { color: #64748b; font-size: .76rem; line-height: 1.45; }
+.root-payment-accounts-heading button,
+.root-payment-account-heading button { border: 0; border-radius: 6px; padding: 6px 8px; background: #e8f1fb; color: #145b96; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 750; }
+.root-payment-account { display: grid; gap: 8px; padding: 10px; border: 1px solid #e1e7ee; border-radius: 9px; background: #f8fafc; }
+.root-payment-account > label { display: grid; gap: 5px; color: #344054; font-size: .75rem; font-weight: 700; }
+.root-payment-account input:not([type="checkbox"]) { width: 100%; min-height: 35px; box-sizing: border-box; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 7px; color: #172033; font: inherit; font-weight: 400; }
+.root-payment-settings-save { min-height: 40px; margin-top: 14px; padding: 9px 15px; border: 0; border-radius: 8px; background: #1769aa; color: #fff; cursor: pointer; font-weight: 750; }
+.root-payment-settings-error,
+.root-payment-settings-success { padding: 9px 11px; border-radius: 7px; font-size: .82rem; }
+.root-payment-settings-error { background: #fff1f0; color: #b42318; }
+.root-payment-settings-success { background: #e8f5e9; color: #217a39; }
+
+@media (max-width: 700px) {
+  .root-payment-provider-grid { grid-template-columns: 1fr; }
+  .root-payment-account-channel-settings { grid-template-columns: 1fr; }
+}
