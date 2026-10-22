@@ -1,0 +1,217 @@
+.page {
+  min-height: calc(100vh - 200px);
+}
+
+.cta-card {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: var(--text-light);
+  text-align: center;
+}
+
+.cta-card h2 {
+  color: var(--text-light);
+}
+
+.cta-card p {
+  color: var(--text-light);
+  opacity: 0.9;
+}
+
+.cta-card .btn {
+  background: var(--text-light);
+  color: var(--primary-color);
+  margin-top: 12px;
+}
+
+.cta-card .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tier-card {
+  background: var(--bg-gray);
+  padding: 18px;
+  border-radius: 8px;
+  border: 2px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.tier-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.tier-card h3 {
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.tier-card p {
+  font-style: italic;
+  margin-bottom: 10px;
+  color: #666;
+}
+
+.tier-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.tier-card li {
+  padding: 4px 0;
+  color: #555;
+}
+
+.tier-card li::before {
+  content: "✓ ";
+  color: var(--primary-color);
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.process-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.step {
+  text-align: center;
+}
+
+.step-number {
+  width: 44px;
+  height: 44px;
+  background: var(--primary-color);
+  color: var(--text-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 0 auto 10px;
+}
+
+.step h3 {
+  margin-bottom: 8px;
+  color: var(--text-dark);
+}
+
+.step p {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+/* Tablet responsiveness */
+@media (max-width: 1024px) {
+  .tier-card {
+    padding: 20px;
+  }
+
+  .process-steps {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 25px;
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .cta-card {
+    padding: 25px 20px;
+  }
+
+  .cta-card h2 {
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .cta-card p {
+    font-size: 0.95rem;
+  }
+
+  .cta-card .btn {
+    width: 100%;
+    max-width: 280px;
+    padding: 12px 25px;
+  }
+
+  .tier-card {
+    padding: 20px 15px;
+  }
+
+  .tier-card h3 {
+    font-size: 1.2rem;
+  }
+
+  .tier-card p {
+    font-size: 0.95rem;
+  }
+
+  .tier-card li {
+    font-size: 0.95rem;
+  }
+
+  .process-steps {
+    grid-template-columns: 1fr;
+    gap: 25px;
+    margin: 25px 0;
+  }
+
+  .step-number {
+    width: 50px;
+    height: 50px;
+    font-size: 1.3rem;
+  }
+
+  .step h3 {
+    font-size: 1.1rem;
+  }
+
+  .step p {
+    font-size: 0.9rem;
+  }
+}
+
+/* Small mobile responsiveness */
+@media (max-width: 480px) {
+  .cta-card {
+    padding: 20px 15px;
+  }
+
+  .cta-card h2 {
+    font-size: 1.3rem;
+  }
+
+  .cta-card p {
+    font-size: 0.9rem;
+  }
+
+  .tier-card {
+    padding: 15px 12px;
+  }
+
+  .tier-card h3 {
+    font-size: 1.1rem;
+  }
+
+  .tier-card p,
+  .tier-card li {
+    font-size: 0.9rem;
+  }
+
+  .step-number {
+    width: 45px;
+    height: 45px;
+    font-size: 1.2rem;
+  }
+
+  .step h3 {
+    font-size: 1rem;
+  }
+
+  .step p {
+    font-size: 0.85rem;
+  }
+}

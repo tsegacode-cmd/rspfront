@@ -1,0 +1,75 @@
+.ruc { color: #2c3e50; }
+.ruc-section-switch { display: flex; gap: 10px; margin-bottom: 18px; }
+.ruc-section-switch button {
+  padding: 10px 18px; border: 2px solid #e2e8f0; border-radius: 10px;
+  background: #fff; color: #334155; font-weight: 700; cursor: pointer; transition: all .15s ease;
+}
+.ruc-section-switch button.active { border-color: #8b0000; background: #fff5f6; color: #8b0000; }
+
+.ruc-alert { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: .9rem; font-weight: 600; }
+.ruc-alert.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+.ruc-alert.error { background: #fdecea; color: #c62828; border: 1px solid #ef9a9a; }
+
+.ruc-panel { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 3px 14px rgba(0,0,0,.06); }
+.ruc-title { margin: 0 0 6px; font-size: 1.25rem; font-weight: 800; color: #1a1a2e; }
+.ruc-desc { margin: 0 0 18px; font-size: .86rem; color: #64748b; line-height: 1.5; }
+.ruc-subtitle { margin: 20px 0 10px; font-size: 1rem; font-weight: 800; color: #1a1a2e; }
+.ruc-empty { color: #7f8c8d; font-size: .9rem; padding: 16px 0; }
+
+.ruc-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.ruc-tabs button {
+  padding: 8px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+  background: #f8fafc; color: #334155; font-weight: 700; font-size: .85rem; cursor: pointer;
+}
+.ruc-tabs button.active { border-color: #c41e3a; background: #fff5f6; color: #c41e3a; }
+
+.ruc-table-wrap { overflow-x: auto; }
+.ruc-table { width: 100%; border-collapse: collapse; font-size: .85rem; min-width: 640px; }
+.ruc-table thead tr { background: linear-gradient(135deg, #1a1a2e, #2c3e50); }
+.ruc-table th { padding: 10px 12px; text-align: left; color: #fff; font-weight: 700; font-size: .78rem; white-space: nowrap; }
+.ruc-table tbody tr { border-bottom: 1px solid #f0f2f5; }
+.ruc-table tbody tr:hover { background: #f8f9fc; }
+.ruc-table td { padding: 10px 12px; color: #2c3e50; vertical-align: middle; }
+.ruc-amount { font-weight: 700; color: #27ae60 !important; }
+.ruc-otp { font-family: monospace; font-weight: 800; color: #8e44ad; letter-spacing: 1px; }
+.ruc-expired { display: block; font-size: .72rem; color: #c62828; font-weight: 700; }
+.ruc-muted { color: #94a3b8; font-size: .82rem; }
+
+.ruc-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; color: #fff; text-transform: capitalize; }
+.ruc-badge.pending { background: #f39c12; }
+.ruc-badge.approved { background: #2980b9; }
+.ruc-badge.completed { background: #27ae60; }
+
+.ruc-input { width: 130px; padding: 7px 10px; border: 1.5px solid #dde3ea; border-radius: 8px; font-size: .82rem; }
+
+.ruc-act { padding: 6px 11px; border: 0; border-radius: 8px; font-size: .78rem; font-weight: 700; cursor: pointer; margin-right: 6px; text-decoration: none; display: inline-block; }
+.ruc-act.approve { background: #e8f5e9; color: #2e7d32; }
+.ruc-act.approve:hover { background: #2e7d32; color: #fff; }
+.ruc-act.receipt { background: #ede7f6; color: #6a1b9a; }
+.ruc-act.receipt:hover { background: #6a1b9a; color: #fff; }
+.ruc-act.reset { background: #fff3e0; color: #e65100; }
+.ruc-act.reset:hover { background: #e65100; color: #fff; }
+.ruc-act.delete { background: #fdecea; color: #c62828; }
+.ruc-act.delete:hover { background: #c62828; color: #fff; }
+.ruc-act.pdf { background: #e3f2fd; color: #1565c0; }
+.ruc-act.pdf:hover { background: #1565c0; color: #fff; }
+
+.ruc-receipt-overlay {
+  position: fixed; inset: 0; z-index: 5000; display: flex;
+  align-items: center; justify-content: center; padding: 16px;
+  background: rgba(15,23,42,.65);
+}
+.ruc-receipt-viewer {
+  display: flex; flex-direction: column; width: min(100%, 900px);
+  height: min(90dvh, 900px); overflow: hidden; border-radius: 14px;
+  background: #fff; box-shadow: 0 20px 50px rgba(0,0,0,.3);
+}
+.ruc-receipt-viewer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; color: #fff; background: #1a1a2e;
+}
+.ruc-receipt-viewer-header button {
+  width: 32px; height: 32px; border: 0; border-radius: 50%;
+  background: rgba(255,255,255,.2); color: #fff; font-size: 1.3rem; cursor: pointer;
+}
+.ruc-receipt-viewer iframe { flex: 1; width: 100%; min-height: 0; border: 0; }
