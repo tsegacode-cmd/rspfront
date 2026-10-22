@@ -1,0 +1,362 @@
+.root-agent-management {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #243447;
+}
+
+.root-agent-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.root-agent-heading h2 {
+  margin: 0 0 4px;
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+}
+
+.root-agent-heading p,
+.root-agent-panel > p {
+  margin: 0;
+  color: #667085;
+  line-height: 1.45;
+}
+
+.root-agent-button,
+.root-agent-actions button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #8b0000;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.root-agent-button:disabled,
+.root-agent-actions button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.root-agent-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.root-agent-metrics article,
+.root-agent-panel,
+.root-agent-card {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 9px rgba(16, 24, 40, .04);
+}
+
+.root-agent-metrics article {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.root-agent-metrics span,
+.root-agent-card span,
+.root-agent-row span {
+  color: #667085;
+  font-size: .8rem;
+}
+
+.root-agent-metrics strong {
+  overflow-wrap: anywhere;
+  color: #172033;
+  font-size: 1.05rem;
+}
+
+.root-agent-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #dfe5ec;
+}
+
+.root-agent-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #475467;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.root-agent-tabs button.active {
+  border-bottom-color: #c41e3a;
+  color: #8b0000;
+}
+
+.root-agent-tabs button span,
+.root-agent-count {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #fff1cc;
+  color: #7a4b00;
+  font-size: .75rem;
+}
+
+.root-agent-layout {
+  display: grid;
+  grid-template-columns: minmax(210px, .7fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.root-agent-list,
+.root-agent-detail {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.root-agent-card {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.root-agent-card.selected {
+  border-color: #c41e3a;
+  box-shadow: 0 0 0 2px rgba(196, 30, 58, .12);
+}
+
+.root-agent-card > strong {
+  color: #172033;
+}
+
+.root-agent-card b {
+  margin-top: 2px;
+  color: #8b0000;
+}
+
+.root-agent-card small {
+  color: #667085;
+  font-size: .72rem;
+  line-height: 1.4;
+}
+
+.root-agent-wallet-balances {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.root-agent-wallet-balances article {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.root-agent-wallet-balances span {
+  color: #667085;
+  font-size: .76rem;
+}
+
+.root-agent-wallet-balances strong {
+  color: #172033;
+  overflow-wrap: anywhere;
+}
+
+.root-agent-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 9px;
+  color: #172033;
+  font-size: 1rem;
+}
+
+.root-agent-panel > p + p {
+  margin-top: 8px;
+}
+
+.root-agent-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.root-agent-form label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  color: #475467;
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+.root-agent-form input,
+.root-agent-form select,
+.root-agent-form textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 39px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #243447;
+  font: inherit;
+  font-weight: 400;
+}
+
+.root-agent-form textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.root-agent-form .full-width {
+  grid-column: 1 / -1;
+}
+
+.root-agent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid #eef1f5;
+}
+
+.root-agent-row:first-of-type {
+  border-top: 0;
+}
+
+.root-agent-row > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.root-agent-row strong,
+.root-agent-row p {
+  overflow-wrap: anywhere;
+}
+
+.root-agent-row p {
+  margin: 3px 0 0;
+  color: #475467;
+  font-size: .85rem;
+  white-space: pre-wrap;
+}
+
+.root-agent-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.root-agent-actions .secondary {
+  background: #eef2f6;
+  color: #344054;
+}
+
+.root-agent-totals {
+  padding-top: 10px;
+  border-top: 1px solid #eef1f5;
+  font-size: .85rem;
+}
+
+.root-agent-empty,
+.root-agent-error,
+.root-agent-notice {
+  padding: 11px 12px;
+  border-radius: 8px;
+  background: #fff;
+  color: #667085;
+  text-align: center;
+}
+
+.root-agent-error,
+.root-agent-notice {
+  margin: 0 0 10px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.root-agent-error {
+  background: #fff1f0;
+  color: #9f1c14;
+}
+
+.root-agent-notice {
+  background: #ecfdf3;
+  color: #166534;
+}
+
+@media (max-width: 760px) {
+  .root-agent-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .root-agent-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .root-agent-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .root-agent-heading {
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .root-agent-heading p {
+    font-size: .8rem;
+  }
+
+  .root-agent-list,
+  .root-agent-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .root-agent-form .full-width {
+    grid-column: auto;
+  }
+
+  .root-agent-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .root-agent-wallet-balances {
+    grid-template-columns: 1fr;
+  }
+}

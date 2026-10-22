@@ -1,0 +1,62 @@
+.daily-games-panel {
+  display: grid;
+  gap: 18px;
+}
+.daily-games-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 16px;
+  color: white;
+  background: linear-gradient(125deg, #7f1028, #bd2748 60%, #e49643);
+  box-shadow: 0 12px 30px #7f102825;
+}
+.daily-games-heading h2 { margin: 0 0 6px; font-size: clamp(1.5rem, 4vw, 2rem); }
+.daily-games-heading p:not(.daily-games-kicker) { margin: 0; max-width: 580px; color: #fffde9; line-height: 1.5; }
+.daily-games-kicker { margin: 0 0 7px; color: #ffe5a2; font-size: .7rem; font-weight: 900; letter-spacing: .13em; }
+.daily-games-header-icon { font-size: 3rem; filter: drop-shadow(0 5px 8px #0003); }
+.daily-games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr)); gap: 14px; }
+.daily-game-card { display: grid; align-content: start; gap: 13px; padding: 16px; border: 1px solid #e6ebf2; border-radius: 14px; background: white; box-shadow: 0 8px 24px #1522380b; }
+.daily-game-card-heading { display: flex; align-items: center; gap: 10px; }
+.daily-game-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: #fff0f2; font-size: 1.5rem; }
+.daily-game-card-heading h3 { margin: 0; color: #1d2b42; font-size: 1rem; }
+.daily-game-card-heading p { margin: 3px 0 0; color: #748197; font-size: .8rem; }
+.daily-wheel-wrap { position: relative; display: grid; justify-items: center; padding-top: 8px; }
+.daily-wheel { display: grid; place-items: center; width: 142px; aspect-ratio: 1; border: 7px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px #e2e8f0, 0 7px 17px #18263d24; }
+.daily-wheel span { display: grid; place-items: center; width: 40px; aspect-ratio: 1; border-radius: 50%; background: white; color: #9d142d; font-size: .72rem; font-weight: 900; box-shadow: 0 2px 7px #0003; }
+.daily-wheel-pointer { position: absolute; z-index: 1; top: 0; color: #17243b; font-size: 1.2rem; text-shadow: 0 1px white; }
+.is-playing .daily-wheel { animation: daily-wheel-spin 1.35s cubic-bezier(.12,.75,.2,1) both; }
+.daily-slot-reels { display: flex; justify-content: center; gap: 8px; padding: 14px 6px; }
+.daily-slot-reels span { display: grid; place-items: center; width: 57px; height: 62px; border: 2px solid #f1d995; border-radius: 10px; background: linear-gradient(#fffdf6, #f6e9bd); font-size: 1.75rem; box-shadow: 0 4px 0 #c5a454; }
+.is-playing .daily-slot-reels span.shuffling { animation: daily-slot-shuffle .28s linear infinite alternate; }
+.daily-mine-grid { display: grid; grid-template-columns: repeat(3, 48px); justify-content: center; gap: 6px; padding: 8px; }
+.daily-games-panel .daily-mine-grid button { display: grid; place-items: center; height: 40px; padding: 0; border: 1px solid #dbe4ef; border-radius: 8px; background: #edf3fa; color: #64748b; font-size: 1.2rem; font-weight: 900; }
+.daily-games-panel .daily-mine-grid button:disabled { cursor: not-allowed; }
+.daily-games-panel .daily-mine-grid button.found { background: #eaf9ef; border-color: #92d5a6; color: #17683b; }
+.daily-games-panel .daily-mine-grid button.empty { background: #fff0f1; border-color: #f4b3bb; color: #a11925; }
+.daily-game-prizes { display: flex; flex-wrap: wrap; gap: 6px; }
+.daily-game-prizes span { padding: 5px 7px; border-radius: 7px; background: #f4f6f9; color: #627087; font-size: .7rem; }
+.daily-game-prizes strong { color: #9d142d; }
+.daily-game-cooldown { margin: 0; color: #a11925; font-size: .82rem; text-align: center; }
+.daily-game-play { width: 100%; border: 0; border-radius: 9px; padding: 10px 12px; background: linear-gradient(110deg, #9d142d, #c92443); color: white; font: inherit; font-weight: 800; cursor: pointer; }
+.daily-game-play:disabled { opacity: .56; cursor: not-allowed; }
+.daily-games-result { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 11px; animation: daily-result-pop .4s ease-out; }
+.daily-games-result.won { border: 1px solid #a3dfb4; background: #edfff2; color: #17683b; }
+.daily-games-result.missed { border: 1px solid #edd39b; background: #fffbef; color: #80510b; }
+.daily-games-result-icon { font-size: 1.7rem; }
+.daily-games-result strong { font-size: 1.03rem; }
+.daily-games-result p { margin: 3px 0 0; font-size: .82rem; }
+.daily-games-error { margin: 0; padding: 10px 12px; border-radius: 9px; background: #fff1f0; color: #a11925; }
+.daily-games-login { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #e6ebf2; border-radius: 11px; background: white; }
+.daily-games-login p { margin: 0; color: #526176; }
+.daily-games-login button { border: 0; border-radius: 8px; padding: 9px 12px; background: #9d142d; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+@keyframes daily-slot-shuffle { to { transform: translateY(-3px); filter: brightness(1.25); } }
+@keyframes daily-wheel-spin { from { transform: rotate(0); } to { transform: rotate(1440deg); } }
+@keyframes daily-result-pop { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 520px) {
+  .daily-games-heading { padding: 16px; }
+  .daily-games-header-icon { font-size: 2.2rem; }
+  .daily-games-login { align-items: flex-start; flex-direction: column; }
+}
