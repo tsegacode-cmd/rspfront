@@ -50,13 +50,22 @@ function RootAgentManagement() {
     setError('')
     try {
       const response = await rootAPI.getAgentManagement()
-      const result = response.data
-      setData(result)
-      setSelectedAgentId(current => current || result.agents[0]?.id || '')
+      const result = response.data || {}
+      const agentsList = Array.isArray(result.agents) ? result.agents : []
+      const packageRequestsList = Array.isArray(result.package_requests) ? result.package_requests : []
+
+      setData({
+        agents: agentsList,
+        package_requests: packageRequestsList,
+        package_pool_balance: Number(result.package_pool_balance || 0),
+      })
+
+      setSelectedAgentId(current => current || agentsList[0]?.id || '')
       setFunding(current => ({ ...current, agentId: current.agentId || '' }))
+
       try {
         const analyticsResponse = await rootAPI.getAgentAnalytics()
-        setAnalytics(analyticsResponse.data)
+        setAnalytics(analyticsResponse.data || null)
         setAnalyticsError('')
       } catch (analyticsLoadError) {
         setAnalyticsError(analyticsLoadError.message || 'Could not load agent analytics.')
@@ -77,11 +86,12 @@ function RootAgentManagement() {
     setError('')
     try {
       const response = await rootAPI.getAgentDetails(agentId)
-      setDetails(response.data)
+      const detailsData = response.data || {}
+      setDetails(detailsData)
       setSettings({
-        service_charge_percent: response.data.settings.service_charge_percent ?? 0,
-        reward_percent: response.data.settings.reward_percent ?? 0,
-        payment_details: response.data.settings.payment_details || '',
+        service_charge_percent: detailsData.settings?.service_charge_percent ?? 0,
+        reward_percent: detailsData.settings?.reward_percent ?? 0,
+        payment_details: detailsData.settings?.payment_details || '',
       })
     } catch (loadError) {
       setDetails(null)
@@ -113,25 +123,25 @@ function RootAgentManagement() {
         loggedRefreshError = false
         setDetails(current => current ? ({
           ...current,
-          created_accounts: current.created_accounts.map(account => ({
+          created_accounts: (current.created_accounts || []).map(account => ({
             ...account,
-            ...(response.data.created_accounts.find(item => item.id === account.id) || {}),
+            ...((response.data.created_accounts || []).find(item => item.id === account.id) || {}),
           })),
-          products: current.products.map(product => ({
+          products: (current.products || []).map(product => ({
             ...product,
-            ...(response.data.products.find(item => item.id === product.id) || {}),
+            ...((response.data.products || []).find(item => item.id === product.id) || {}),
           })),
-          service_products: current.service_products.map(product => ({
+          service_products: (current.service_products || []).map(product => ({
             ...product,
-            ...(response.data.service_products.find(item => item.id === product.id) || {}),
+            ...((response.data.service_products || []).find(item => item.id === product.id) || {}),
           })),
-          package_requests: current.package_requests.map(request => ({
+          package_requests: (current.package_requests || []).map(request => ({
             ...request,
-            ...(response.data.package_requests.find(item => item.id === request.id) || {}),
+            ...((response.data.package_requests || []).find(item => item.id === request.id) || {}),
           })),
-          wallet_requests: current.wallet_requests.map(request => ({
+          wallet_requests: (current.wallet_requests || []).map(request => ({
             ...request,
-            ...(response.data.wallet_requests.find(item => item.id === request.id) || {}),
+            ...((response.data.wallet_requests || []).find(item => item.id === request.id) || {}),
           })),
         }) : current)
       } catch (refreshError) {
@@ -226,7 +236,7 @@ function RootAgentManagement() {
       const response = await rootAPI.getAgentWalletRequestReceipt(request.id)
       setReceiptPreview({
         title: `${request.type === 'deposit' ? 'Deposit' : 'Withdrawal'} receipt`,
-        file: response.data.receiptFile || response.data.receiptImage,
+        file: response.data?.receiptFile || response.data?.receiptImage,
       })
     } catch (loadError) {
       setReceiptError(loadError.message || 'Could not load the receipt.')
@@ -247,12 +257,13 @@ function RootAgentManagement() {
     `Product ${status}.`,
   )
 
-  const selectedAgent = data.agents.find(agent => agent.id === selectedAgentId)
-  const pendingRequests = data.package_requests.filter(request => request.status === 'pending')
-  const pendingProducts = details?.products.filter(product => product.approval_status === 'pending') || []
+  const safeAgents = Array.isArray(data.agents) ? data.agents : []
+  const selectedAgent = safeAgents.find(agent => agent.id === selectedAgentId)
+  const pendingRequests = (Array.isArray(data.package_requests) ? data.package_requests : []).filter(request => request.status === 'pending')
+  const pendingProducts = (details?.products || []).filter(product => product.approval_status === 'pending')
   const pendingServiceProducts = (details?.service_products || []).filter(product => product.approval_status === 'pending')
-  const createdChildAgents = details?.created_accounts.filter(account => String(account.role).toLowerCase() === 'agent') || []
-  const createdCustomers = details?.created_accounts.filter(account => String(account.role).toLowerCase() === 'user') || []
+  const createdChildAgents = (details?.created_accounts || []).filter(account => String(account.role || '').toLowerCase() === 'agent')
+  const createdCustomers = (details?.created_accounts || []).filter(account => String(account.role || '').toLowerCase() === 'user')
 
   return (
     <section className="root-agent-management">
@@ -270,7 +281,7 @@ function RootAgentManagement() {
       {notice && <p className="root-agent-notice" role="status">{notice}</p>}
 
       <div className="root-agent-metrics" aria-label="Agent platform summary">
-        <article><span>Agents</span><strong>{analytics?.agents ?? data.agents.length}</strong></article>
+        <article><span>Agents</span><strong>{analytics?.agents ?? safeAgents.length}</strong></article>
         <article><span>Products</span><strong>{analytics?.products ?? '—'}</strong></article>
         <article><span>Pending package requests</span><strong>{analytics?.pending_package_requests ?? pendingRequests.length}</strong></article>
         <article><span>Package pool balance</span><strong>{formatMoney(data.package_pool_balance)}</strong></article>
@@ -290,10 +301,10 @@ function RootAgentManagement() {
         <p className="root-agent-empty">Loading agent management…</p>
       ) : view === 'agents' ? (
         <>
-          {data.agents.length ? (
+          {safeAgents.length ? (
             <div className="root-agent-layout">
               <div className="root-agent-list">
-                {data.agents.map(agent => (
+                {safeAgents.map(agent => (
                   <button
                     type="button"
                     key={agent.id}
@@ -394,7 +405,7 @@ function RootAgentManagement() {
                         <label>Destination
                           <select value={funding.agentId} onChange={event => setFunding(current => ({ ...current, agentId: event.target.value }))}>
                             <option value="">Platform package pool</option>
-                            {data.agents.map(agent => <option key={agent.id} value={agent.id}>{agent.full_name || agent.username}</option>)}
+                            {safeAgents.map(agent => <option key={agent.id} value={agent.id}>{agent.full_name || agent.username}</option>)}
                           </select>
                         </label>
                         <label>Amount (ETB)
@@ -413,7 +424,7 @@ function RootAgentManagement() {
 
                     <section className="root-agent-panel">
                       <h3>Products {pendingProducts.length > 0 && <span className="root-agent-count">{pendingProducts.length} pending</span>}</h3>
-                      {details.products.length ? details.products.map(product => (
+                      {(details.products || []).length ? (details.products || []).map(product => (
                         <article className="root-agent-row" key={product.id}>
                           <div>
                             <strong>{product.title}</strong>
@@ -436,7 +447,7 @@ function RootAgentManagement() {
 
                     <section className="root-agent-panel">
                       <h3>Service and digital product approvals {pendingServiceProducts.length > 0 && <span className="root-agent-count">{pendingServiceProducts.length} pending</span>}</h3>
-                      {details.service_products?.length ? details.service_products.map(product => (
+                      {(details.service_products || []).length ? (details.service_products || []).map(product => (
                         <article className="root-agent-row" key={product.id}>
                           <div>
                             <strong>{product.title || product.name}</strong>
@@ -496,9 +507,9 @@ function RootAgentManagement() {
 
                     <section className="root-agent-panel">
                       <h3>Wallet requests for this agent</h3>
-                      {details.wallet_requests?.length ? (
+                      {(details.wallet_requests || []).length ? (
                         <div className="root-agent-request-list">
-                          {details.wallet_requests.map(request => (
+                          {(details.wallet_requests || []).map(request => (
                             <article className="root-agent-row" key={request.id}>
                               <div>
                                 <strong>{request.user_username || 'Customer'} · {request.type} · {formatMoney(request.amount)}</strong>
@@ -517,7 +528,7 @@ function RootAgentManagement() {
 
                     <section className="root-agent-panel">
                       <h3>Transaction history</h3>
-                      {details.transaction_history?.length ? details.transaction_history.map(transaction => (
+                      {(details.transaction_history || []).length ? (details.transaction_history || []).map(transaction => (
                         <article className="root-agent-row" key={`${transaction.type}-${transaction.id}`}>
                           <div>
                             <strong>{String(transaction.type || '').replace(/_/g, ' ')} · {formatMoney(transaction.amount)}</strong>
@@ -534,9 +545,9 @@ function RootAgentManagement() {
           ) : <p className="root-agent-empty">No agent accounts found.</p>}
         </>
       ) : view === 'requests' ? (
-        data.package_requests.length ? (
+        (Array.isArray(data.package_requests) ? data.package_requests : []).length ? (
           <div className="root-agent-panel">
-            {data.package_requests.map(request => (
+            {(Array.isArray(data.package_requests) ? data.package_requests : []).map(request => (
               <article className="root-agent-row" key={request.id}>
                 <div>
                   <strong>{request.agent_name || request.agent_username || 'Agent'} · {formatMoney(request.amount)}</strong>
