@@ -65,16 +65,23 @@ const normalizeMenuKey = value => {
 }
 
 export const isSiteMenuHidden = (settings, role, menuId, fallbackRoute = menuId) => {
+  const normalizedRole = String(role || '').trim().toLowerCase()
+  const menuKey = normalizeMenuKey(menuId)
+  const routeKey = normalizeMenuKey(fallbackRoute)
+
+  if (
+    normalizedRole === 'visitor' &&
+    settings?.visitorMenuVisibilityConfigured !== true &&
+    ['data-collect', '/data-collect'].some(key => key === menuKey || key === routeKey)
+  ) return true
+
   if (settings?.enabled === false) return false
 
-  const normalizedRole = String(role || '').trim().toLowerCase()
   const rule = Array.isArray(settings?.rules)
     ? settings.rules.find(item => String(item?.role || '').trim().toLowerCase() === normalizedRole)
     : null
   if (rule?.enabled === false) return false
 
-  const menuKey = normalizeMenuKey(menuId)
-  const routeKey = normalizeMenuKey(fallbackRoute)
   return [
     ...(Array.isArray(rule?.hiddenMenus) ? rule.hiddenMenus : DEFAULT_ROLE_HIDDEN_MENUS[normalizedRole] || []),
     ...(Array.isArray(rule?.hiddenRoutes) ? rule.hiddenRoutes : []),
