@@ -127,7 +127,8 @@ const isWithinDateFilter = (record, filter, startDate, endDate) => {
 
 const getCurrentUserProfile = () => {
   try {
-    return JSON.parse(localStorage.getItem('userData') || '{}')
+    const user = JSON.parse(localStorage.getItem('userData') || '{}')
+    return user && typeof user === 'object' && !Array.isArray(user) ? user : {}
   } catch (error) {
     console.error('Could not read the current staff profile:', error)
     return {}
@@ -158,14 +159,17 @@ const matchesRegistrationStaffFilter = (record, filter, role) => {
 }
 
 const getStaffValue = staff =>
-  String(staff.username || staff.full_name || staff.fullName || staff.id || staff._id || staff.email || '').trim()
+  String(staff?.username || staff?.full_name || staff?.fullName || staff?.id || staff?._id || staff?.email || '').trim()
 
 const useRegisteredStaff = (setForm, registeredStaff, defaultKey = 'ebc_default_staff') => {
   const { staffList: allStaff, loading, error } = useStaffList(true)
   const user = useMemo(getCurrentUserProfile, [])
   const currentRole = getAccountAccessRole()
   const staffOptions = useMemo(() => {
-    const options = allStaff.filter(staff => String(staff.role || '').trim().toLowerCase() === 'staff')
+    const options = allStaff.filter(staff =>
+      staff && typeof staff === 'object' &&
+      String(staff.role || '').trim().toLowerCase() === 'staff'
+    )
     if (['staff', 'user'].includes(currentRole) && getStaffValue(user) &&
         !options.some(staff => getStaffValue(staff) === getStaffValue(user))) {
       options.unshift({ ...user, role: 'staff' })
