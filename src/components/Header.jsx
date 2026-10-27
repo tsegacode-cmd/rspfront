@@ -443,7 +443,9 @@ function Header() {
   const { permissions, refreshPermissions } = usePermissions(isLoggedIn, 30000)
 
   const isMenuHiddenByRole = (menuKey, fallbackRoute = menuKey) => {
-    return isSiteMenuHidden(siteContent?.accountAccessSettings, profileRole || getAccountAccessRole(), menuKey, fallbackRoute)
+    if (localStorage.getItem('rootToken')) return false
+    const role = isLoggedIn ? profileRole || getAccountAccessRole() : 'visitor'
+    return isSiteMenuHidden(siteContent?.accountAccessSettings, role, menuKey, fallbackRoute)
   }
 
   const canAccessMenu = (menuName) => {
