@@ -2146,6 +2146,13 @@
   min-width: 150px;
   font-size: .88rem;
 }
+.rpt-filter-hint,
+.rpt-filter-error {
+  font-size: .78rem;
+  line-height: 1.35;
+}
+.rpt-filter-hint { color: #667085; }
+.rpt-filter-error { color: #b42318; }
 
 /* ══════════════════════════════════════════════════
    ORGANIZATION SUB-TABS (Registration / Report)
