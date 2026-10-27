@@ -102,12 +102,22 @@ const getUrlsToTry = (endpoint, preferredBaseUrl) => {
 export const getApiHealthUrls = () =>
   isApiBackendConfigured() ? getUrlsToTry('/health') : [];
 
-// Fetch with a hard 8-second timeout — aborts instead of hanging indefinitely
-const fetchWithTimeout = (url, config, ms = 8000) => {
+// Allow time for backend cold starts and Neon queries, but avoid hanging indefinitely.
+const fetchWithTimeout = async (url, config, ms = 60000) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), ms);
-  return fetch(url, { ...config, signal: controller.signal })
-    .finally(() => clearTimeout(timeoutId));
+  try {
+    return await fetch(url, { ...config, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      const timeoutError = new Error(`The API request timed out after ${Math.ceil(ms / 1000)} seconds.`);
+      timeoutError.name = 'TimeoutError';
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
 // Get auth token from localStorage
@@ -159,7 +169,7 @@ const apiRequest = async (endpoint, options = {}, timeoutMs = 8000) => {
       }
       return data;
     } catch (err) {
-      if (err.status || err.responseReceived) throw err;
+      if (err.status || err.responseReceived || err.name === 'TimeoutError') throw err;
       lastError = err;
       continue;
     }
@@ -203,7 +213,7 @@ const unauthenticatedRequest = async (endpoint, options = {}, preferredBaseUrl, 
       }
       return data;
     } catch (err) {
-      if (err.status || err.responseReceived) throw err;
+      if (err.status || err.responseReceived || err.name === 'TimeoutError') throw err;
       lastError = err;
       continue;
     }
