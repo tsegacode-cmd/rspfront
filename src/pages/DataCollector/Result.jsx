@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dataRegistrationAPI, userAPI } from '../../services/api'
+import { getRegistrationExportRows } from '../../utils/registrationExport'
 import DOMPurify from 'dompurify'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
@@ -850,33 +851,21 @@ function Result() {
   }
 
   const downloadExcel = (data, section, staffName) => {
-    // Create CSV content with logo and header
-    let csv = 'REDSEA - fixed and movable Commission Work & Brokerage Services\n'
-    csv += `${section} Registrations Report\n`
-    csv += `Staff: ${staffName}\n`
-    csv += `Date: ${new Date().toLocaleDateString()}\n`
-    csv += `Total Records: ${data.length}\n\n`
-    
-    // Add table headers
-    csv += '#,Client Name,Phone,Kebele,House No,TV No,Staff,Work Type,Payment,Date\n'
-    
-    // Add data rows
-    data.forEach((reg, index) => {
-      const payment = reg.paid_amount ? `${reg.paid_amount} Birr` : 'N/A'
-      csv += `${index + 1},"${reg.client_name}","${reg.client_phone}","${reg.kebele}","${reg.house_no || 'N/A'}","${reg.tv_no} TV","${reg.staff_username}","${reg.work_type}","${payment}","${new Date(reg.registered_at).toLocaleDateString()}"\n`
-    })
-    
-    // Create and download file
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `REDSEA_${section}_Report_${new Date().toISOString().split('T')[0]}.csv`
-    link.click()
-    
-    showNotification(`✓ ${section} report downloaded as Excel!`, 'success')
+    const schemaRows = completeRegistrations.concat(incompleteRegistrations)
+    const worksheet = XLSX.utils.json_to_sheet(getRegistrationExportRows(data, schemaRows))
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, `${section} Registrations`)
+    XLSX.writeFile(workbook, `REDSEA_${section}_Report_${new Date().toISOString().split('T')[0]}.xlsx`)
+    showNotification(`✓ ${section} report downloaded for ${staffName}!`, 'success')
   }
 
   const downloadWord = (data, section, staffName) => {
+    const schemaRows = completeRegistrations.concat(incompleteRegistrations)
+    const rows = getRegistrationExportRows(data, schemaRows)
+    const headers = Object.keys(rows[0] || getRegistrationExportRows([{}])[0])
+    const escape = value => String(value ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
     // Create HTML content for Word
     let html = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
@@ -895,36 +884,10 @@ function Result() {
         
         <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
           <thead style="background-color: #c41e3a; color: white;">
-            <tr>
-              <th>#</th>
-              <th>Client Name</th>
-              <th>Phone</th>
-              <th>Kebele</th>
-              <th>House No</th>
-              <th>TV No</th>
-              <th>Staff</th>
-              <th>Work Type</th>
-              <th>Payment</th>
-              <th>Date</th>
-            </tr>
+            <tr>${headers.map(header => `<th>${escape(header)}</th>`).join('')}</tr>
           </thead>
           <tbody>
-            ${data.map((reg, index) => {
-              const payment = reg.paid_amount ? `${reg.paid_amount} Birr` : 'N/A'
-              return `
-              <tr>
-                <td>${index + 1}</td>
-                <td>${reg.client_name}</td>
-                <td>${reg.client_phone}</td>
-                <td>${reg.kebele}</td>
-                <td>${reg.house_no || 'N/A'}</td>
-                <td>${reg.tv_no} TV</td>
-                <td>${reg.staff_username}</td>
-                <td>${reg.work_type}</td>
-                <td>${payment}</td>
-                <td>${new Date(reg.registered_at).toLocaleDateString()}</td>
-              </tr>
-            `}).join('')}
+            ${rows.map(row => `<tr>${headers.map(header => `<td>${escape(row[header])}</td>`).join('')}</tr>`).join('')}
           </tbody>
         </table>
       </body>
@@ -961,24 +924,16 @@ function Result() {
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 46)
     doc.text(`Total Records: ${data.length}`, 14, 52)
     
-    const tableData = data.map((reg, index) => [
-      index + 1,
-      reg.client_name,
-      reg.client_phone,
-      reg.kebele,
-      reg.house_no || 'N/A',
-      reg.tv_no + ' TV',
-      reg.staff_username,
-      reg.work_type,
-      reg.paid_amount ? `${reg.paid_amount} Birr` : 'N/A',
-      new Date(reg.registered_at).toLocaleDateString()
-    ])
+    const schemaRows = completeRegistrations.concat(incompleteRegistrations)
+    const rows = getRegistrationExportRows(data, schemaRows)
+    const headers = Object.keys(rows[0] || getRegistrationExportRows([{}])[0])
+    const tableData = rows.map(row => headers.map(header => row[header]))
     
     doc.autoTable({
       startY: 58,
-      head: [['#', 'Client', 'Phone', 'Kebele', 'House', 'TV', 'Staff', 'Work Type', 'Payment', 'Date']],
+      head: [headers],
       body: tableData,
-      styles: { fontSize: 7, cellPadding: 2 },
+      styles: { fontSize: 5, cellPadding: 1.5, overflow: 'linebreak' },
       headStyles: { fillColor: [196, 30, 58], textColor: [255, 255, 255] },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { top: 58 }
@@ -990,6 +945,16 @@ function Result() {
 
   const printData = (data, section, staffName) => {
     const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      showNotification('Allow pop-ups to print this report.', 'error')
+      return
+    }
+    const schemaRows = completeRegistrations.concat(incompleteRegistrations)
+    const rows = getRegistrationExportRows(data, schemaRows)
+    const headers = Object.keys(rows[0] || getRegistrationExportRows([{}])[0])
+    const escape = value => String(value ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
     printWindow.document.write(`
       <html>
       <head>
@@ -1021,36 +986,10 @@ function Result() {
         
         <table>
           <thead>
-            <tr>
-              <th>#</th>
-              <th>Client Name</th>
-              <th>Phone</th>
-              <th>Kebele</th>
-              <th>House No</th>
-              <th>TV No</th>
-              <th>Staff</th>
-              <th>Work Type</th>
-              <th>Payment</th>
-              <th>Date</th>
-            </tr>
+            <tr>${headers.map(header => `<th>${escape(header)}</th>`).join('')}</tr>
           </thead>
           <tbody>
-            ${data.map((reg, index) => {
-              const payment = reg.paid_amount ? `${reg.paid_amount} Birr` : 'N/A'
-              return `
-              <tr>
-                <td>${index + 1}</td>
-                <td>${reg.client_name}</td>
-                <td>${reg.client_phone}</td>
-                <td>${reg.kebele}</td>
-                <td>${reg.house_no || 'N/A'}</td>
-                <td>${reg.tv_no} TV</td>
-                <td>${reg.staff_username}</td>
-                <td>${reg.work_type}</td>
-                <td>${payment}</td>
-                <td>${new Date(reg.registered_at).toLocaleDateString()}</td>
-              </tr>
-            `}).join('')}
+            ${rows.map(row => `<tr>${headers.map(header => `<td>${escape(row[header])}</td>`).join('')}</tr>`).join('')}
           </tbody>
         </table>
       </body>
