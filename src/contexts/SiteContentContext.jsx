@@ -10,6 +10,7 @@ const DEFAULT_ACCOUNT_ACCESS_RULES = SITE_ACCOUNT_ROLES.map(({ key, label }) => 
   enabled: true,
   hiddenMenus: DEFAULT_ROLE_HIDDEN_MENUS[key] || [],
   hiddenRoutes: [],
+  actions: { deleteRegistrations: ['admin', 'root'].includes(key) },
   notes: '',
 }))
 
