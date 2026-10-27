@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { canAccessTab } from '../../utils/permissions'
 import { useTranslation } from '../../hooks/useTranslation'
 import Pagination, { getPageItems, PAGE_SIZE } from '../../components/Pagination'
 import { useSiteContent } from '../../contexts/SiteContentContext'
 import { getAccountAccessRole } from '../../utils/guestAccount'
+import { useStaffList } from '../../hooks/useStaffList'
+import { getRegistrationExportRows } from '../../utils/registrationExport'
 
 // Inline page imports — Data Menu modal
 import DataRegistration from './DataRegistration'
@@ -87,6 +89,119 @@ const readStoredFilter = (key, fallback = '') => {
   } catch {
     return fallback
   }
+}
+
+const getRegistrationDate = record => {
+  const value = record.registration_datetime || record.registered_at || record.created_at
+  if (!value) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+const isWithinDateFilter = (record, filter, startDate, endDate) => {
+  if (filter === 'all') return true
+  const date = getRegistrationDate(record)
+  if (!date) return false
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  if (filter === 'today') return date >= todayStart && date < new Date(todayStart.getTime() + 86400000)
+  if (filter === 'week') {
+    const weekStart = new Date(todayStart)
+    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7))
+    const nextWeek = new Date(weekStart)
+    nextWeek.setDate(nextWeek.getDate() + 7)
+    return date >= weekStart && date < nextWeek
+  }
+  if (filter === 'month') {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    return date >= monthStart && date < nextMonth
+  }
+  if (filter === 'custom') {
+    const start = startDate ? new Date(`${startDate}T00:00:00`) : null
+    const end = endDate ? new Date(`${endDate}T23:59:59.999`) : null
+    return (!start || date >= start) && (!end || date <= end)
+  }
+  return true
+}
+
+const getCurrentUserProfile = () => {
+  try {
+    return JSON.parse(localStorage.getItem('userData') || '{}')
+  } catch (error) {
+    console.error('Could not read the current staff profile:', error)
+    return {}
+  }
+}
+
+const getStaffFilterDefault = () => {
+  if (!['staff', 'user'].includes(getAccountAccessRole())) return 'all'
+  const user = getCurrentUserProfile()
+  return String(user.username || user.full_name || user.fullName || user.email || '').trim()
+}
+
+const getRegistrationStaffValues = record =>
+  [record.staff_username, record.staff_full_name]
+    .map(value => String(value || '').trim().toLocaleLowerCase())
+    .filter(Boolean)
+
+const matchesRegistrationStaffFilter = (record, filter, role) => {
+  const recordStaff = getRegistrationStaffValues(record)
+  if (['staff', 'user'].includes(role)) {
+    const user = getCurrentUserProfile()
+    const currentStaff = [user.username, user.full_name, user.fullName]
+      .map(value => String(value || '').trim().toLocaleLowerCase())
+      .filter(Boolean)
+    return recordStaff.some(value => currentStaff.includes(value))
+  }
+  return filter === 'all' || recordStaff.includes(String(filter || '').trim().toLocaleLowerCase())
+}
+
+const getStaffValue = staff =>
+  String(staff.username || staff.full_name || staff.fullName || staff.id || staff._id || staff.email || '').trim()
+
+const useRegisteredStaff = (setForm, registeredStaff, defaultKey = 'ebc_default_staff') => {
+  const { staffList: allStaff, loading, error } = useStaffList(true)
+  const user = useMemo(getCurrentUserProfile, [])
+  const currentRole = getAccountAccessRole()
+  const staffOptions = useMemo(() => {
+    const options = allStaff.filter(staff => String(staff.role || '').trim().toLowerCase() === 'staff')
+    if (['staff', 'user'].includes(currentRole) && getStaffValue(user) &&
+        !options.some(staff => getStaffValue(staff) === getStaffValue(user))) {
+      options.unshift({ ...user, role: 'staff' })
+    }
+    return options
+  }, [allStaff, currentRole, user])
+
+  useEffect(() => {
+    let configuredStaff = ''
+    try {
+      const saved = localStorage.getItem(defaultKey)
+      const value = saved ? JSON.parse(saved) : null
+      configuredStaff = typeof value === 'string'
+        ? value
+        : String(value?.username || value?.full_name || value?.fullName || value?.id || '').trim()
+    } catch (storageError) {
+      console.error(`Could not read ${defaultKey}:`, storageError)
+    }
+    const desiredStaff = ['staff', 'user'].includes(currentRole) ? getStaffValue(user) : configuredStaff
+    const selected = staffOptions.find(staff =>
+      [staff.username, staff.full_name, staff.fullName, staff.id, staff._id]
+        .some(value => String(value || '').trim() === desiredStaff)
+    ) || (['staff', 'user'].includes(currentRole) ? null : staffOptions[0])
+    const selectedValue = getStaffValue(selected) || desiredStaff
+    setForm(previous => {
+      if (['staff', 'user'].includes(currentRole)) {
+        return selectedValue ? { ...previous, registeredStaff: selectedValue } : previous
+      }
+      return previous.registeredStaff || !selectedValue
+        ? previous
+        : { ...previous, registeredStaff: selectedValue }
+    })
+  }, [currentRole, defaultKey, setForm, staffOptions, user])
+
+  const selectedStaff = staffOptions.find(staff => getStaffValue(staff) === registeredStaff)
+  return { staffOptions, selectedStaff, loading, error }
 }
 
 // Project title + logo helpers (shared across registration, filter, report and downloads)
@@ -210,9 +325,24 @@ const readProjectLogoForTitle = (title) => {
 }
 
 const assertRegistrationRound = (response, expectedRound) => {
+  if (!response?.success || !response?.data) {
+    throw new Error(response?.message || 'The server did not confirm the registration save.')
+  }
   const savedRound = Number(response?.data?.round)
   if (!Number.isInteger(savedRound) || savedRound !== expectedRound) {
     throw new Error(`The server did not confirm Round ${expectedRound}. Please retry and verify the saved record.`)
+  }
+}
+
+const assertRegistrationPayment = (response, expectedStatus, expectedAmount) => {
+  if (!response?.success || !response?.data) {
+    throw new Error(response?.message || 'The server did not confirm the payment update.')
+  }
+  if (String(response.data.payment_status || '').toLowerCase() !== expectedStatus) {
+    throw new Error(`The database did not save the expected ${expectedStatus} payment status.`)
+  }
+  if (expectedAmount !== undefined && Number(response.data.paid_amount) !== expectedAmount) {
+    throw new Error('The database did not save the expected payment amount.')
   }
 }
 
@@ -301,6 +431,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
   }
 
   const [form,      setForm]      = useState(() => ({ ...emptyForm, projectTitle: readDefaultProjectTitle() }))
+  const { staffOptions, selectedStaff } = useRegisteredStaff(setForm, form.registeredStaff)
   const [productTitles, setProductTitles] = useState(() => readProjectTitles())
   const [existingRecords, setExistingRecords] = useState([])
   const [nameSuggestionsOpen, setNameSuggestionsOpen] = useState(false)
@@ -385,8 +516,9 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
     address:             form.address.trim(),
     house_no:            form.houseNo.trim()           || null,
     client_phone:        form.phoneNo.trim(),
-    staff_username:      form.registeredStaff.trim()   || 'EBC-Staff',
-    staff_full_name:     form.registeredStaff.trim()   || 'EBC Staff',
+    staff_id:            selectedStaff?.id || selectedStaff?._id || null,
+    staff_username:      selectedStaff?.username || form.registeredStaff.trim() || 'EBC-Staff',
+    staff_full_name:     selectedStaff?.full_name || selectedStaff?.fullName || form.registeredStaff.trim() || 'EBC Staff',
     paid_amount:         form.payment ? parseFloat(form.payment) : null,
     payment_period_type: resolvedYear                  || null,
     receipt_no:          regNo.trim() || null,
@@ -459,6 +591,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
         buildPayload({ payment_status: 'paid', paid_amount: parseFloat(paidAmount) }, selectedRound)
       )
       assertRegistrationRound(res, selectedRound)
+      assertRegistrationPayment(res, 'paid', parseFloat(paidAmount))
       setRecordId(res?.data?.id ?? res?.data?._id ?? null)
       setExistingRecords(prev => [res?.data || buildPayload({ payment_status: 'paid', paid_amount: parseFloat(paidAmount) }), ...prev])
       setForm(prev => ({ ...prev, payment: paidAmount }))
@@ -473,15 +606,30 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
   const handleUpdate = async () => {
     if (!validate()) return
     if (!recordId) { setError('No saved record to update.'); return }
+    if (confirmed && (!form.payment || !Number.isFinite(Number(form.payment)) || Number(form.payment) <= 0)) {
+      setError('Enter a valid payment amount before saving a paid record.')
+      return
+    }
     const selectedRound = Number(roundRef.current)
+    const savedRecord = existingRecords.find(record =>
+      String(record._id || record.id) === String(recordId)
+    )
+    const originalRegisteredAt = savedRecord?.registered_at || savedRecord?.created_at
     setLoading(true); setError(null)
     try {
       const { dataRegistrationAPI } = await import('../../services/api.js')
       const result = await dataRegistrationAPI.updateRegistration(recordId,
-        buildPayload({ payment_status: confirmed ? 'paid' : 'unpaid' }, selectedRound)
+        buildPayload({
+          payment_status: confirmed ? 'paid' : 'unpaid',
+          ...(originalRegisteredAt ? { registered_at: originalRegisteredAt } : {}),
+        }, selectedRound)
       )
       assertRegistrationRound(result, selectedRound)
+      setExistingRecords(previous => previous.map(record =>
+        String(record._id || record.id) === String(recordId) ? { ...record, ...result.data } : record
+      ))
       setSaved(true); setEditMode(false)
+      setPaidDone(confirmed)
     } catch (err) {
       setError('Update failed: ' + (err.message || 'Unknown error'))
     } finally { setLoading(false) }
@@ -490,14 +638,23 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
   /* ── CONFIRM PAID (on existing saved record) ── */
   const handleConfirmPaid = async () => {
     if (!recordId) { setError('Please save the record first.'); return }
+    const amount = Number(form.payment)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError('Enter a valid payment amount before confirming payment.')
+      return
+    }
     setLoading(true); setError(null)
     try {
       const { dataRegistrationAPI } = await import('../../services/api.js')
-      await dataRegistrationAPI.updateRegistration(recordId, {
+      const response = await dataRegistrationAPI.updateRegistration(recordId, {
         payment_status: 'paid',
-        paid_amount: form.payment ? parseFloat(form.payment) : null,
+        paid_amount: amount,
       })
-      setConfirmed(true); setSaved(true); setEditMode(false)
+      assertRegistrationPayment(response, 'paid', amount)
+      setExistingRecords(previous => previous.map(record =>
+        String(record._id || record.id) === String(recordId) ? { ...record, ...response.data } : record
+      ))
+      setConfirmed(true); setPaidDone(true); setSaved(true); setEditMode(false)
     } catch (err) {
       setError('Confirm failed: ' + (err.message || 'Unknown error'))
     } finally { setLoading(false) }
@@ -512,10 +669,15 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
     setLoading(true); setError(null)
     try {
       const { dataRegistrationAPI } = await import('../../services/api.js')
-      await dataRegistrationAPI.updateRegistration(recordId, {
+      const amount = parseFloat(paidAmount)
+      const response = await dataRegistrationAPI.updateRegistration(recordId, {
         payment_status: 'paid',
-        paid_amount:    parseFloat(paidAmount),
+        paid_amount: amount,
       })
+      assertRegistrationPayment(response, 'paid', amount)
+      setExistingRecords(previous => previous.map(record =>
+        String(record._id || record.id) === String(recordId) ? { ...record, ...response.data } : record
+      ))
       setForm(prev => ({ ...prev, payment: paidAmount }))
       setPaidDone(true); setConfirmed(true); setSaved(true); setPaidPanelOpen(false)
     } catch (err) {
@@ -531,10 +693,14 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
     setLoading(true); setError(null)
     try {
       const { dataRegistrationAPI } = await import('../../services/api.js')
-      await dataRegistrationAPI.updateRegistration(recordId, {
+      const response = await dataRegistrationAPI.updateRegistration(recordId, {
         payment_status: 'unpaid',
         paid_amount:    null,
       })
+      assertRegistrationPayment(response, 'unpaid')
+      setExistingRecords(previous => previous.map(record =>
+        String(record._id || record.id) === String(recordId) ? { ...record, ...response.data } : record
+      ))
       setPaidDone(false)
       setConfirmed(false)
       setForm(prev => ({ ...prev, payment: '' }))
@@ -572,7 +738,12 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
 
       if (defaultStaff) {
         const staff = JSON.parse(defaultStaff)
-        setForm(prev => ({ ...prev, registeredStaff: staff.fullName || '' }))
+        const desiredStaff = String(staff.username || staff.full_name || staff.fullName || staff.id || '').trim()
+        const matchingStaff = staffOptions.find(option =>
+          [option.username, option.full_name, option.fullName, option.id, option._id]
+            .some(value => String(value || '').trim() === desiredStaff)
+        )
+        setForm(prev => ({ ...prev, registeredStaff: getStaffValue(matchingStaff) || desiredStaff }))
       }
       if (defaultPayment) {
         setForm(prev => ({ ...prev, payment: defaultPayment }))
@@ -931,8 +1102,18 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
             {isReadOnly ? (
               <div className="ebc-readonly-value">{form.registeredStaff || '—'}</div>
             ) : (
-              <input className="ebc-input" placeholder="Staff name or ID"
-                value={form.registeredStaff} onChange={e => handleChange('registeredStaff', e.target.value)} />
+              <select className="ebc-select" value={form.registeredStaff}
+                disabled={getAccountAccessRole() === 'staff'}
+                onChange={e => handleChange('registeredStaff', e.target.value)}>
+                <option value="">Select registered staff</option>
+                {form.registeredStaff && !staffOptions.some(option => getStaffValue(option) === form.registeredStaff) &&
+                  <option value={form.registeredStaff}>{form.registeredStaff}</option>}
+                {staffOptions.map(option => (
+                  <option key={option.id || option._id || getStaffValue(option)} value={getStaffValue(option)}>
+                    {option.username || getStaffValue(option)}{(option.full_name || option.fullName) ? ` — ${option.full_name || option.fullName}` : ''}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
@@ -1145,23 +1326,29 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
 
 
 /* Inline edit row component */
-function ReportEditRow({ record, onSave, onCancel }) {
+function ReportEditRow({ record, onSave, onCancel, colSpan = 16 }) {
   const [val, setVal] = useState({
-    client_name:         record.client_name        || '',
-    kebele:              record.kebele              || '',
-    house_no:            record.house_no            || '',
-    client_phone:        record.client_phone        || '',
-    staff_username:      record.staff_username      || '',
-    paid_amount:         record.paid_amount != null ? String(record.paid_amount) : '',
+    client_name: record.client_name || '',
+    national_id: record.national_id || '',
+    city: record.city || '',
+    address: record.address || '',
+    kebele: record.kebele || '',
+    house_no: record.house_no || '',
+    client_phone: record.client_phone || '',
+    staff_username: record.staff_username || '',
+    paid_amount: record.paid_amount != null ? String(record.paid_amount) : '',
     payment_period_type: record.payment_period_type || '',
-    payment_status:      record.payment_status      || 'unpaid',
+    payment_status: record.payment_status || 'unpaid',
   })
   const f = (k) => (e) => setVal(p => ({ ...p, [k]: e.target.value }))
   return (
     <tr className="rpt-edit-row">
-      <td colSpan={9}>
+      <td colSpan={colSpan}>
         <div className="rpt-edit-grid">
           <div className="rpt-edit-field"><label>Name</label><input value={val.client_name} onChange={f('client_name')} /></div>
+          <div className="rpt-edit-field"><label>National ID</label><input value={val.national_id} onChange={f('national_id')} /></div>
+          <div className="rpt-edit-field"><label>City</label><input value={val.city} onChange={f('city')} /></div>
+          <div className="rpt-edit-field"><label>Address</label><input value={val.address} onChange={f('address')} /></div>
           <div className="rpt-edit-field"><label>Kebele</label><input value={val.kebele} onChange={f('kebele')} /></div>
           <div className="rpt-edit-field"><label>House No</label><input value={val.house_no} onChange={f('house_no')} /></div>
           <div className="rpt-edit-field"><label>Phone</label><input value={val.client_phone} onChange={f('client_phone')} /></div>
@@ -1189,8 +1376,10 @@ function ReportEditRow({ record, onSave, onCancel }) {
 
 function EbcReportTab() {
   const siteContent = useSiteContent()
-  const currentRole = getAccountAccessRole()
-  const currentRoleRule = siteContent.accountAccessSettings?.rules?.find(rule => rule.role === currentRole)
+  const currentRole = getAccountAccessRole().trim().toLowerCase()
+  const currentRoleRule = siteContent.accountAccessSettings?.rules?.find(
+    rule => String(rule.role || '').trim().toLowerCase() === currentRole
+  )
   const canDeleteRegistrations = typeof currentRoleRule?.actions?.deleteRegistrations === 'boolean'
     ? currentRoleRule.actions.deleteRegistrations
     : ['admin', 'root'].includes(currentRole)
@@ -1207,7 +1396,15 @@ function EbcReportTab() {
   const [deletingId,  setDeletingId]  = useState(null)
   const [roundFilter, setRoundFilter] = useState(() => readStoredFilter('ebc_report_round_filter', 'all'))
   const [projectFilter, setProjectFilter] = useState(() => readStoredFilter('ebc_report_project_filter', 'all'))
+  const [staffFilter, setStaffFilter] = useState(() => readStoredFilter('ebc_report_staff_filter', getStaffFilterDefault()))
+  const [dateFilter, setDateFilter] = useState(() => readStoredFilter('ebc_report_date_filter', 'all'))
+  const [startDate, setStartDate] = useState(() => readStoredFilter('ebc_report_start_date'))
+  const [endDate, setEndDate] = useState(() => readStoredFilter('ebc_report_end_date'))
   const [reportPage, setReportPage] = useState(0)
+
+  useEffect(() => {
+    if (['staff', 'user'].includes(currentRole)) setStaffFilter(getStaffFilterDefault())
+  }, [currentRole])
 
   useEffect(() => {
     writeStoredFilter('ebc_report_subtab', subTab)
@@ -1226,8 +1423,24 @@ function EbcReportTab() {
   }, [projectFilter])
 
   useEffect(() => {
+    writeStoredFilter('ebc_report_staff_filter', staffFilter)
+  }, [staffFilter])
+
+  useEffect(() => {
+    writeStoredFilter('ebc_report_date_filter', dateFilter)
+  }, [dateFilter])
+
+  useEffect(() => {
+    writeStoredFilter('ebc_report_start_date', startDate)
+  }, [startDate])
+
+  useEffect(() => {
+    writeStoredFilter('ebc_report_end_date', endDate)
+  }, [endDate])
+
+  useEffect(() => {
     setReportPage(0)
-  }, [subTab, query, roundFilter, projectFilter])
+  }, [subTab, query, roundFilter, projectFilter, staffFilter, dateFilter, startDate, endDate])
 
   /* Load saved registrations from the database whenever the report is opened or refreshed. */
   const [reloadToken, setReloadToken] = useState(0)
@@ -1244,7 +1457,9 @@ function EbcReportTab() {
             ? res.registrations
             : null
         if (!registrations) throw new Error('The server returned registrations in an unexpected format.')
-        if (!cancelled) setRecords(registrations)
+        if (!cancelled) setRecords(registrations.filter(record =>
+          record.person !== 'organization' && record.client_type !== 'organization'
+        ))
       } catch (e) { if (!cancelled) setError(e.message) }
       finally     { if (!cancelled) setLoading(false) }
     }
@@ -1279,6 +1494,10 @@ function EbcReportTab() {
     const selectedTitle = normalizeProjectTitle(projectFilter)
     base = base.filter(r => normalizeProjectTitle(getRegistrationProjectTitle(r)) === selectedTitle)
   }
+  if (staffFilter !== 'all') {
+    base = base.filter(record => matchesRegistrationStaffFilter(record, staffFilter, currentRole))
+  }
+  base = base.filter(record => isWithinDateFilter(record, dateFilter, startDate, endDate))
   const q = query.trim().toLowerCase()
   if (q) {
     base = base.filter(r =>
@@ -1323,29 +1542,45 @@ function EbcReportTab() {
   const selectedProjectTitle = projectFilter === 'all'
     ? 'All Projects'
     : projectOptions.find(title => normalizeProjectTitle(title) === normalizeProjectTitle(projectFilter)) || projectFilter
+  const staffOptions = [...new Set(records
+    .map(record => String(record.staff_username || record.staff_full_name || '').trim())
+    .filter(Boolean))].sort((left, right) => left.localeCompare(right))
+  const visibleStaffOptions = ['staff', 'user'].includes(currentRole)
+    ? [getStaffFilterDefault()].filter(Boolean)
+    : staffOptions
 
   /* inline update */
   const handleUpdate = async (id, data) => {
     setSaving(true)
     try {
       const { dataRegistrationAPI } = await import('../../services/api.js')
-      await dataRegistrationAPI.updateRegistration(id, {
-        client_name:         data.client_name,
-        kebele:              data.kebele,
-        house_no:            data.house_no,
-        client_phone:        data.client_phone,
-        staff_username:      data.staff_username,
-        paid_amount:         data.paid_amount ? parseFloat(data.paid_amount) : null,
-        payment_period_type: data.payment_period_type,
-        payment_status:      data.payment_status,
+      const response = await dataRegistrationAPI.updateRegistration(id, {
+        client_name: data.client_name,
+        national_id: data.national_id || null,
+        city: data.city || null,
+        address: data.address || null,
+        kebele: data.kebele,
+        house_no: data.house_no || null,
+        client_phone: data.client_phone,
+        staff_username: data.staff_username || null,
+        paid_amount: data.paid_amount === '' ? null : Number(data.paid_amount),
+        payment_period_type: data.payment_period_type || null,
+        payment_status: data.payment_status,
       })
-      setRecords(prev => prev.map(r =>
-        (r._id || r.id) === id
-          ? { ...r, ...data, paid_amount: data.paid_amount ? parseFloat(data.paid_amount) : null }
-          : r
+      if (!response?.success || !response.data) {
+        throw new Error(response?.message || 'The server did not confirm the update.')
+      }
+      setRecords(previous => previous.map(record =>
+        String(record._id || record.id) === String(id)
+          ? { ...record, ...response.data }
+          : record
       ))
       setEditId(null)
-    } catch (e) { alert('Update failed: ' + e.message) }
+      setError(null)
+    } catch (e) {
+      console.error('Could not update registration from the report:', e)
+      setError(`Update failed: ${e.message}`)
+    }
     finally { setSaving(false) }
   }
 
@@ -1406,12 +1641,12 @@ function EbcReportTab() {
       doc.setTextColor(90, 90, 90)
       doc.text(`Generated: ${new Date().toLocaleString()}   Total: ${sorted.length}`, 14, 40)
       doc.setTextColor(0, 0, 0)
-      const reportRows = sorted.map(getIndividualReportRow)
+      const reportRows = getRegistrationExportRows(sorted, records)
       doc.autoTable({
         startY: 45,
-        head: [Object.keys(reportRows[0] || getIndividualReportRow({}))],
+        head: [Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0])],
         body: reportRows.map(row => Object.values(row)),
-        styles: { fontSize: 8, cellPadding: 3 },
+        styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' },
         headStyles: { fillColor: [196, 30, 58], textColor: 255, fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 245, 245] },
       })
@@ -1440,7 +1675,7 @@ function EbcReportTab() {
       const XLSX = await import('xlsx')
       const title = subTab === 'total' ? 'All Records'
                   : subTab === 'paid'  ? 'Paid Records' : 'Unpaid Records'
-      const worksheet = XLSX.utils.json_to_sheet(sorted.map(getIndividualReportRow))
+      const worksheet = XLSX.utils.json_to_sheet(getRegistrationExportRows(sorted, records))
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, 'EBC Report')
       XLSX.writeFile(workbook, buildReportFilename(title, selectedProjectTitle, roundFilter, 'xlsx'))
@@ -1456,6 +1691,7 @@ function EbcReportTab() {
                 : subTab === 'paid'  ? 'Paid Records' : 'Unpaid Records'
     const projectTitle = selectedProjectTitle
     const logo = readProjectLogoForTitle(projectFilter === 'all' ? '' : projectTitle)
+    const reportRows = getRegistrationExportRows(sorted, records)
 
     try {
       const htmlContent = `
@@ -1484,12 +1720,12 @@ function EbcReportTab() {
         <p class="meta">Generated: ${new Date().toLocaleString()} | Total Records: ${sorted.length}</p>
         <table>
           <thead>
-            ${Object.keys(getIndividualReportRow({})).map(header => `<th>${escapeHtml(header)}</th>`).join('')}
+            ${Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0]).map(header => `<th>${escapeHtml(header)}</th>`).join('')}
           </thead>
           <tbody>
-            ${sorted.map(r => `
+            ${reportRows.map(row => `
               <tr>
-                ${Object.values(getIndividualReportRow(r)).map(value => `<td>${escapeHtml(value)}</td>`).join('')}
+                ${Object.values(row).map(value => `<td>${escapeHtml(value)}</td>`).join('')}
               </tr>
             `).join('')}
           </tbody>
@@ -1595,6 +1831,31 @@ function EbcReportTab() {
           </select>
         </div>
 
+        <div className="rpt-round-filter">
+          <label>Staff:</label>
+          <select className="ebc-select rpt-round-select" value={staffFilter} onChange={event => setStaffFilter(event.target.value)}>
+            {!['staff', 'user'].includes(currentRole) && <option value="all">All Staff</option>}
+            {visibleStaffOptions.map(staff => <option key={staff} value={staff}>{staff}</option>)}
+          </select>
+        </div>
+
+        <div className="rpt-round-filter">
+          <label>Date:</label>
+          <select className="ebc-select rpt-round-select" value={dateFilter} onChange={event => setDateFilter(event.target.value)}>
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="custom">Custom Period</option>
+          </select>
+        </div>
+        {dateFilter === 'custom' && (
+          <>
+            <label className="rpt-date-filter">From <input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} /></label>
+            <label className="rpt-date-filter">To <input type="date" value={endDate} onChange={event => setEndDate(event.target.value)} /></label>
+          </>
+        )}
+
         <input
           className="ebc-input rpt-search"
           placeholder="Search by Name / Phone / Kebele / Reg ID / Staff / Amount / Year / Round..."
@@ -1665,14 +1926,14 @@ function EbcReportTab() {
                 </tr>
               </thead>
               <tbody>
-                {getPageItems(sorted, safeReportPage).map((r) => {
+                {getPageItems(sorted, safeReportPage).map((r, index) => {
                   const rid = r._id || r.id
                   const isPaid = isRegistrationPaid(r)
                   return (
                     <>
                       <tr
                         key={rid}
-                        className={`rpt-row ${isPaid ? 'rpt-paid' : 'rpt-unpaid'} ${editId === rid ? 'rpt-editing' : ''}`}
+                        className={`rpt-row ${index % 2 ? 'rpt-stripe-silver' : 'rpt-stripe-white'} ${isPaid ? 'rpt-paid' : 'rpt-unpaid'} ${editId === rid ? 'rpt-editing' : ''}`}
                         onClick={() => setEditId(editId === rid ? null : rid)}
                         title="Click to expand edit"
                       >
@@ -1717,6 +1978,7 @@ function EbcReportTab() {
                         <ReportEditRow
                           key={`edit-${rid}`}
                           record={r}
+                          colSpan={15 + (canDeleteRegistrations ? 1 : 0)}
                           onSave={(data) => handleUpdate(rid, data)}
                           onCancel={() => setEditId(null)}
                         />
@@ -2091,6 +2353,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     setRound(nextRound)
   }
   const [form, setForm] = useState(() => ({ ...emptyForm, projectTitle: readDefaultProjectTitle() }))
+  const { staffOptions, selectedStaff } = useRegisteredStaff(setForm, form.registeredStaff, 'ebc_org_default_staff')
   const [productTitles, setProductTitles] = useState(() => readProjectTitles())
   const [existingRecords, setExistingRecords] = useState([])
   const [nameSuggestionsOpen, setNameSuggestionsOpen] = useState(false)
@@ -2248,8 +2511,9 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     city: form.city.trim(),
     address: form.address.trim() || null,
     kebele: resolvedKebele,
-    staff_username: form.registeredStaff.trim() || 'EBC-Staff',
-    staff_full_name: form.registeredStaff.trim() || 'EBC Staff',
+    staff_id: selectedStaff?.id || selectedStaff?._id || null,
+    staff_username: selectedStaff?.username || form.registeredStaff.trim() || 'EBC-Staff',
+    staff_full_name: selectedStaff?.full_name || selectedStaff?.fullName || form.registeredStaff.trim() || 'EBC Staff',
     paid_amount: form.payment ? parseFloat(form.payment) : null,
     payment_period_type: resolvedYear || null,
     receipt_no: regNo.trim() || null,
@@ -2314,6 +2578,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
         buildPayload({ payment_status: 'paid', paid_amount: parseFloat(paidAmount) }, selectedRound)
       )
       assertRegistrationRound(res, selectedRound)
+      assertRegistrationPayment(res, 'paid', parseFloat(paidAmount))
       setRecordId(res?.data?.id ?? res?.data?._id ?? null)
       setExistingRecords(previous => [res.data, ...previous])
       setForm(prev => ({ ...prev, payment: paidAmount }))
@@ -2327,14 +2592,28 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
   const handleUpdate = async () => {
     if (!validate()) return
     if (!recordId) { setError('No saved record to update.'); return }
+    if (confirmed && (!form.payment || !Number.isFinite(Number(form.payment)) || Number(form.payment) <= 0)) {
+      setError('Enter a valid payment amount before saving a paid record.')
+      return
+    }
     const selectedRound = Number(roundRef.current)
+    const savedRecord = existingRecords.find(record =>
+      String(record._id || record.id) === String(recordId)
+    )
+    const originalRegisteredAt = savedRecord?.registered_at || savedRecord?.created_at
     setLoading(true); setError(null)
     try {
       const { dataRegistrationAPI } = await import('../../services/api.js')
       const result = await dataRegistrationAPI.updateRegistration(recordId,
-        buildPayload({ payment_status: confirmed ? 'paid' : 'unpaid' }, selectedRound)
+        buildPayload({
+          payment_status: confirmed ? 'paid' : 'unpaid',
+          ...(originalRegisteredAt ? { registered_at: originalRegisteredAt } : {}),
+        }, selectedRound)
       )
       assertRegistrationRound(result, selectedRound)
+      setExistingRecords(previous => previous.map(record =>
+        String(record._id || record.id) === String(recordId) ? { ...record, ...result.data } : record
+      ))
       setSaved(true); setEditMode(false)
     } catch (err) {
       setError('Update failed: ' + (err.message || 'Unknown error'))
@@ -2343,13 +2622,22 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
 
   const handleConfirmPaid = async () => {
     if (!recordId) { setError('Please save the record first.'); return }
+    const amount = Number(form.payment)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError('Enter a valid payment amount before confirming payment.')
+      return
+    }
     setLoading(true); setError(null)
     try {
       const { dataRegistrationAPI } = await import('../../services/api.js')
-      await dataRegistrationAPI.updateRegistration(recordId, {
+      const response = await dataRegistrationAPI.updateRegistration(recordId, {
         payment_status: 'paid',
-        paid_amount: form.payment ? parseFloat(form.payment) : null,
+        paid_amount: amount,
       })
+      assertRegistrationPayment(response, 'paid', amount)
+      setExistingRecords(previous => previous.map(record =>
+        String(record._id || record.id) === String(recordId) ? { ...record, ...response.data } : record
+      ))
       setConfirmed(true); setSaved(true); setEditMode(false)
     } catch (err) {
       setError('Confirm failed: ' + (err.message || 'Unknown error'))
@@ -2364,10 +2652,15 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     setLoading(true); setError(null)
     try {
       const { dataRegistrationAPI } = await import('../../services/api.js')
-      await dataRegistrationAPI.updateRegistration(recordId, {
+      const amount = parseFloat(paidAmount)
+      const response = await dataRegistrationAPI.updateRegistration(recordId, {
         payment_status: 'paid',
-        paid_amount: parseFloat(paidAmount),
+        paid_amount: amount,
       })
+      assertRegistrationPayment(response, 'paid', amount)
+      setExistingRecords(previous => previous.map(record =>
+        String(record._id || record.id) === String(recordId) ? { ...record, ...response.data } : record
+      ))
       setForm(prev => ({ ...prev, payment: paidAmount }))
       setPaidDone(true); setConfirmed(true); setSaved(true); setPaidPanelOpen(false)
     } catch (err) {
@@ -2382,10 +2675,14 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     setLoading(true); setError(null)
     try {
       const { dataRegistrationAPI } = await import('../../services/api.js')
-      await dataRegistrationAPI.updateRegistration(recordId, {
+      const response = await dataRegistrationAPI.updateRegistration(recordId, {
         payment_status: 'unpaid',
         paid_amount: null,
       })
+      assertRegistrationPayment(response, 'unpaid')
+      setExistingRecords(previous => previous.map(record =>
+        String(record._id || record.id) === String(recordId) ? { ...record, ...response.data } : record
+      ))
       setPaidDone(false)
       setConfirmed(false)
       setForm(prev => ({ ...prev, payment: '' }))
@@ -2415,7 +2712,12 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
 
       if (defaultStaff) {
         const staff = JSON.parse(defaultStaff)
-        setForm(prev => ({ ...prev, registeredStaff: staff.fullName || '' }))
+        const desiredStaff = String(staff.username || staff.full_name || staff.fullName || staff.id || '').trim()
+        const matchingStaff = staffOptions.find(option =>
+          [option.username, option.full_name, option.fullName, option.id, option._id]
+            .some(value => String(value || '').trim() === desiredStaff)
+        )
+        setForm(prev => ({ ...prev, registeredStaff: getStaffValue(matchingStaff) || desiredStaff }))
       }
       if (defaultPayment) {
         setForm(prev => ({ ...prev, payment: defaultPayment }))
@@ -2675,8 +2977,18 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
             {isReadOnly ? (
               <div className="ebc-readonly-value">{form.registeredStaff || '—'}</div>
             ) : (
-              <input className="ebc-input" placeholder="Staff name or ID"
-                value={form.registeredStaff} onChange={e => handleChange('registeredStaff', e.target.value)} />
+              <select className="ebc-select" value={form.registeredStaff}
+                disabled={getAccountAccessRole() === 'staff'}
+                onChange={e => handleChange('registeredStaff', e.target.value)}>
+                <option value="">Select registered staff</option>
+                {form.registeredStaff && !staffOptions.some(option => getStaffValue(option) === form.registeredStaff) &&
+                  <option value={form.registeredStaff}>{form.registeredStaff}</option>}
+                {staffOptions.map(option => (
+                  <option key={option.id || option._id || getStaffValue(option)} value={getStaffValue(option)}>
+                    {option.username || getStaffValue(option)}{(option.full_name || option.fullName) ? ` — ${option.full_name || option.fullName}` : ''}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
@@ -2836,6 +3148,14 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
 
 /* Organization Report Content */
 function OrgReportContent({ onEdit }) {
+  const currentRole = getAccountAccessRole()
+  const siteContent = useSiteContent()
+  const currentRoleRule = siteContent.accountAccessSettings?.rules?.find(
+    rule => String(rule.role || '').trim().toLowerCase() === currentRole.trim().toLowerCase()
+  )
+  const canDeleteRegistrations = typeof currentRoleRule?.actions?.deleteRegistrations === 'boolean'
+    ? currentRoleRule.actions.deleteRegistrations
+    : ['admin', 'root'].includes(currentRole.trim().toLowerCase())
   const [records, setRecords] = useState([])
   const [projectTitles, setProjectTitles] = useState(readProjectTitles)
   const [loading, setLoading] = useState(false)
@@ -2844,7 +3164,16 @@ function OrgReportContent({ onEdit }) {
   const [roundFilter, setRoundFilter] = useState(() => readStoredFilter('ebc_org_report_round_filter', 'all'))
   const [statusFilter, setStatusFilter] = useState(() => readStoredFilter('ebc_org_report_status_filter', 'all'))
   const [projectFilter, setProjectFilter] = useState(() => readStoredFilter('ebc_org_report_project_filter', 'all'))
+  const [staffFilter, setStaffFilter] = useState(() => readStoredFilter('ebc_org_report_staff_filter', getStaffFilterDefault()))
+  const [dateFilter, setDateFilter] = useState(() => readStoredFilter('ebc_org_report_date_filter', 'all'))
+  const [startDate, setStartDate] = useState(() => readStoredFilter('ebc_org_report_start_date'))
+  const [endDate, setEndDate] = useState(() => readStoredFilter('ebc_org_report_end_date'))
   const [reportPage, setReportPage] = useState(0)
+  const [deletingId, setDeletingId] = useState(null)
+
+  useEffect(() => {
+    if (['staff', 'user'].includes(currentRole)) setStaffFilter(getStaffFilterDefault())
+  }, [currentRole])
 
   useEffect(() => {
     writeStoredFilter('ebc_org_report_query', query)
@@ -2863,8 +3192,24 @@ function OrgReportContent({ onEdit }) {
   }, [projectFilter])
 
   useEffect(() => {
+    writeStoredFilter('ebc_org_report_staff_filter', staffFilter)
+  }, [staffFilter])
+
+  useEffect(() => {
+    writeStoredFilter('ebc_org_report_date_filter', dateFilter)
+  }, [dateFilter])
+
+  useEffect(() => {
+    writeStoredFilter('ebc_org_report_start_date', startDate)
+  }, [startDate])
+
+  useEffect(() => {
+    writeStoredFilter('ebc_org_report_end_date', endDate)
+  }, [endDate])
+
+  useEffect(() => {
     setReportPage(0)
-  }, [query, roundFilter, statusFilter, projectFilter])
+  }, [query, roundFilter, statusFilter, projectFilter, staffFilter, dateFilter, startDate, endDate])
 
   useEffect(() => {
     let cancelled = false
@@ -2873,8 +3218,12 @@ function OrgReportContent({ onEdit }) {
       try {
         const { dataRegistrationAPI } = await import('../../services/api.js')
         const res = await dataRegistrationAPI.getAllRegistrations()
-        const list = res?.data || res?.registrations || []
-        // Filter only organizations
+        const list = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.registrations)
+            ? res.registrations
+            : null
+        if (!list) throw new Error('The server returned registrations in an unexpected format.')
         if (!cancelled) setRecords(list.filter(r => r.person === 'organization' || r.client_type === 'organization'))
       } catch (e) { if (!cancelled) setError(e.message) }
       finally { if (!cancelled) setLoading(false) }
@@ -2882,6 +3231,30 @@ function OrgReportContent({ onEdit }) {
     load()
     return () => { cancelled = true }
   }, [])
+
+  const handleDeleteOrganization = async record => {
+    const id = record._id || record.id
+    if (!id) {
+      setError('Cannot delete this organization because it has no database ID.')
+      return
+    }
+    if (!window.confirm(`Delete organization registration ${record.receipt_no || id} (Round ${record.round || 1})? This permanently removes it from Neon.`)) {
+      return
+    }
+    setDeletingId(id)
+    setError(null)
+    try {
+      const { dataRegistrationAPI } = await import('../../services/api.js')
+      const response = await dataRegistrationAPI.deleteRegistration(id)
+      if (!response?.success) throw new Error(response?.message || 'The server did not confirm the deletion.')
+      setRecords(previous => previous.filter(item => String(item._id || item.id) !== String(id)))
+    } catch (deleteError) {
+      console.error('Could not delete organization registration from the report:', deleteError)
+      setError(`Could not delete organization registration: ${deleteError.message}`)
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -2909,6 +3282,10 @@ function OrgReportContent({ onEdit }) {
     const selectedTitle = normalizeProjectTitle(projectFilter)
     filtered = filtered.filter(r => normalizeProjectTitle(getRegistrationProjectTitle(r)) === selectedTitle)
   }
+  if (staffFilter !== 'all') {
+    filtered = filtered.filter(record => matchesRegistrationStaffFilter(record, staffFilter, currentRole))
+  }
+  filtered = filtered.filter(record => isWithinDateFilter(record, dateFilter, startDate, endDate))
 
   // Search
   const q = query.trim().toLowerCase()
@@ -2941,28 +3318,15 @@ function OrgReportContent({ onEdit }) {
   const selectedProjectTitle = projectFilter === 'all'
     ? 'All Projects'
     : projectOptions.find(title => normalizeProjectTitle(title) === normalizeProjectTitle(projectFilter)) || projectFilter
+  const staffOptions = [...new Set(records
+    .map(record => String(record.staff_username || record.staff_full_name || '').trim())
+    .filter(Boolean))].sort((left, right) => left.localeCompare(right))
+  const visibleStaffOptions = ['staff', 'user'].includes(currentRole)
+    ? [getStaffFilterDefault()].filter(Boolean)
+    : staffOptions
 
   const exportTitle = `Organizations_${statusFilter === 'all' ? 'All_Statuses' : statusFilter}`
-  const exportRows = filtered.map(record => ({
-    'Reg ID': getRegistrationId(record),
-    'Round': record.round || 1,
-    'Project Title': getRegistrationProjectTitle(record) || '—',
-    'Organization Name': record.client_name || '—',
-    'National ID': record.national_id || '—',
-    'Type': record.org_type || '—',
-    'Contact Person': record.contact_person || '—',
-    'Phone': record.client_phone || '—',
-    'Email': record.client_email || '—',
-    'City': record.city || '—',
-    'Address': record.address || '—',
-    'Kebele': record.kebele || '—',
-    'House No': record.house_no || '—',
-    'Staff': record.staff_username || '—',
-    'Payment': record.paid_amount != null ? `ETB ${record.paid_amount}` : '—',
-    'Year': record.payment_period_type || '—',
-    'Status': isRegistrationPaid(record) ? 'Paid' : 'Unpaid',
-    'Registered At': record.registered_at || record.created_at || '—',
-  }))
+  const exportRows = getRegistrationExportRows(filtered, records)
 
   const downloadOrganizationPDF = async () => {
     try {
@@ -2988,14 +3352,9 @@ function OrgReportContent({ onEdit }) {
       doc.text(`Status: ${statusFilter === 'all' ? 'All statuses' : statusFilter} · Generated: ${new Date().toLocaleString()} · Total: ${filtered.length}`, 14, 39)
       doc.autoTable({
         startY: 45,
-        head: [Object.keys(exportRows[0] || {
-          'Reg ID': '', 'Round': '', 'Project Title': '', 'Organization Name': '',
-          'National ID': '', 'Type': '', 'Contact Person': '', 'Phone': '',
-          'Email': '', 'City': '', 'Address': '', 'Kebele': '', 'House No': '',
-          'Staff': '', 'Payment': '', 'Year': '', 'Status': '', 'Registered At': '',
-        })],
+        head: [Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])],
         body: exportRows.map(row => Object.values(row)),
-        styles: { fontSize: 8, cellPadding: 3 },
+        styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' },
         headStyles: { fillColor: [11, 79, 108], textColor: 255, fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 245, 245] },
       })
@@ -3021,12 +3380,7 @@ function OrgReportContent({ onEdit }) {
 
   const downloadOrganizationWord = () => {
     try {
-      const headers = Object.keys(exportRows[0] || {
-        'Reg ID': '', 'Round': '', 'Project Title': '', 'Organization Name': '',
-        'National ID': '', 'Type': '', 'Contact Person': '', 'Phone': '',
-        'Email': '', 'City': '', 'Address': '', 'Kebele': '', 'House No': '',
-        'Staff': '', 'Payment': '', 'Year': '', 'Status': '', 'Registered At': '',
-      })
+      const headers = Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])
       const htmlContent = `<!DOCTYPE html>
         <html><head><meta charset="utf-8"><title>Organization Registration Report</title>
         <style>
@@ -3112,6 +3466,31 @@ function OrgReportContent({ onEdit }) {
           </select>
         </div>
 
+        <div className="rpt-round-filter">
+          <label>Staff:</label>
+          <select className="ebc-select rpt-round-select" value={staffFilter} onChange={event => setStaffFilter(event.target.value)}>
+            {!['staff', 'user'].includes(currentRole) && <option value="all">All Staff</option>}
+            {visibleStaffOptions.map(staff => <option key={staff} value={staff}>{staff}</option>)}
+          </select>
+        </div>
+
+        <div className="rpt-round-filter">
+          <label>Date:</label>
+          <select className="ebc-select rpt-round-select" value={dateFilter} onChange={event => setDateFilter(event.target.value)}>
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="custom">Custom Period</option>
+          </select>
+        </div>
+        {dateFilter === 'custom' && (
+          <>
+            <label className="rpt-date-filter">From <input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} /></label>
+            <label className="rpt-date-filter">To <input type="date" value={endDate} onChange={event => setEndDate(event.target.value)} /></label>
+          </>
+        )}
+
         <input
           className="ebc-input rpt-search"
           placeholder="Search organizations..."
@@ -3161,6 +3540,7 @@ function OrgReportContent({ onEdit }) {
                   <th>Year</th>
                   <th>Status</th>
                   <th>Registered At</th>
+                  {canDeleteRegistrations && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -3169,9 +3549,9 @@ function OrgReportContent({ onEdit }) {
                   return (
                     <tr 
                       key={r._id || r.id || i} 
-                      className={`${isPaid ? 'rpt-paid' : 'rpt-unpaid'} rpt-clickable`}
-                      onClick={() => onEdit && onEdit(r)}
-                      title="Click to edit this organization"
+                      className={`rpt-row ${i % 2 ? 'rpt-stripe-silver' : 'rpt-stripe-white'} ${isPaid ? 'rpt-paid' : 'rpt-unpaid'} ${onEdit ? 'rpt-clickable' : ''}`}
+                      onClick={onEdit ? () => onEdit(r) : undefined}
+                      title={onEdit ? 'Click to edit this organization' : undefined}
                     >
                       <td><span className="ebc-search-regid">{r.receipt_no || '—'}</span></td>
                       <td><span className="ebc-round-badge">R{r.round || 1}</span></td>
@@ -3195,6 +3575,22 @@ function OrgReportContent({ onEdit }) {
                         </span>
                       </td>
                       <td>{r.registered_at || r.created_at || '—'}</td>
+                      {canDeleteRegistrations && (
+                        <td>
+                          <button
+                            type="button"
+                            className="ebc-btn"
+                            style={{ background: '#b42318', color: '#fff', padding: '6px 10px' }}
+                            onClick={event => {
+                              event.stopPropagation()
+                              handleDeleteOrganization(r)
+                            }}
+                            disabled={deletingId === (r._id || r.id)}
+                          >
+                            {deletingId === (r._id || r.id) ? 'Deleting…' : '🗑 Delete'}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   )
                 })}
@@ -3207,6 +3603,36 @@ function OrgReportContent({ onEdit }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function EbcResultsTab() {
+  const [resultType, setResultType] = useState(() =>
+    readStoredFilter('ebc_result_type', 'individual') === 'organization'
+      ? 'organization'
+      : 'individual'
+  )
+
+  useEffect(() => {
+    writeStoredFilter('ebc_result_type', resultType)
+  }, [resultType])
+
+  return (
+    <div className="ebc-results-tab">
+      <div className="ebc-results-toolbar">
+        <label htmlFor="ebc-result-type">Result type</label>
+        <select
+          id="ebc-result-type"
+          className="ebc-select"
+          value={resultType}
+          onChange={event => setResultType(event.target.value)}
+        >
+          <option value="individual">Individual Results</option>
+          <option value="organization">Organization Results</option>
+        </select>
+      </div>
+      {resultType === 'organization' ? <OrgReportContent /> : <EbcReportTab />}
     </div>
   )
 }
@@ -4554,7 +4980,8 @@ function DataCollect({ openDataMenuRequest = 0 }) {
   const [ebcOpen,     setEbcOpen]     = useState(() => readStoredFilter('ebc_modal_open') === 'true')
   const [ebcTab,      setEbcTab]      = useState(() => {
     const savedTab = readStoredFilter('ebc_modal_tab', 'registration')
-    return ['registration', 'report', 'staff', 'organization', 'setting'].includes(savedTab)
+    if (savedTab === 'report') return 'results'
+    return ['registration', 'results', 'staff', 'organization', 'setting'].includes(savedTab)
       ? savedTab
       : 'registration'
   })
@@ -4649,7 +5076,7 @@ function DataCollect({ openDataMenuRequest = 0 }) {
   // EBC_TABS - moved inside component to pass search props
   const EBC_TABS = [
     { id: 'registration',    icon: '📝',  label: 'Registration',      color: '#c41e3a', component: <EbcRegistrationTab searchResults={searchResults} searchNoResult={searchNoResult} searchQuery={searchQuery} searchError={searchError} /> },
-    { id: 'report',          icon: '📊',  label: 'Report',            color: '#2980b9', component: <EbcReportTab /> },
+    { id: 'results',         icon: '📊',  label: 'Results',           color: '#2980b9', component: <EbcResultsTab /> },
     { id: 'staff',           icon: '👥',  label: 'Staff',             color: '#8e44ad', component: <EbcStaffTab /> },
     { id: 'organization',    icon: '🏛️', label: 'Organization',      color: '#01baef', component: <EbcOrganizationTab /> },
     { id: 'setting',         icon: '⚙️',  label: 'Setting',           color: '#424242', component: <EbcSettingTab /> },
@@ -4826,13 +5253,13 @@ function DataCollect({ openDataMenuRequest = 0 }) {
       ══════════════════════════════════════ */}
       {ebcOpen && (
         <div
-          className="dc-modal-overlay ebc-overlay"
+          className={`dc-modal-overlay ebc-overlay ${ebcTab === 'results' ? 'ebc-results-overlay' : ''}`}
           onClick={(e) => { if (e.target === e.currentTarget) closeEbc() }}
           role="dialog"
           aria-modal="true"
           aria-label="EBC Data"
         >
-          <div className="dc-modal ebc-modal">
+          <div className={`dc-modal ebc-modal ${ebcTab === 'results' ? 'ebc-results-open' : ''}`}>
 
             {/* ── EBC Left Sidebar ── */}
             <aside className="dc-sidebar ebc-sidebar">
@@ -4842,11 +5269,11 @@ function DataCollect({ openDataMenuRequest = 0 }) {
                 </div>
                 <div>
                   <div className="dc-sidebar-title">PROJECT DATA</div>
-                  <div className="dc-sidebar-sub">5 Sections</div>
+                  <div className="dc-sidebar-sub">{EBC_TABS.length} Sections</div>
                 </div>
               </div>
 
-              <nav className="dc-sidebar-nav">
+              <nav className="dc-sidebar-nav ebc-tabs-nav">
                 {EBC_TABS.map((tab) => (
                   <button
                     key={tab.id}
