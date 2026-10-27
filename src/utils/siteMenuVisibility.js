@@ -48,7 +48,7 @@ export const SITE_HEADER_MENUS = [
 ]
 
 export const DEFAULT_ROLE_HIDDEN_MENUS = {
-  visitor: [],
+  visitor: ['data-collect'],
   guest: ['data-collect'],
   user: ['data-collect'],
   staff: [],
