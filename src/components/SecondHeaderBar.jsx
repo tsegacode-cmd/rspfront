@@ -35,8 +35,10 @@ function SecondHeaderBar() {
       }
     }
   })
-  const isMenuVisible = (menuId, fallbackRoute = menuId) =>
-    !isSiteMenuHidden(siteContent?.accountAccessSettings, accountBadge.role, menuId, fallbackRoute)
+  const isMenuVisible = (menuId, fallbackRoute = menuId) => {
+    if (localStorage.getItem('rootToken')) return true
+    return !isSiteMenuHidden(siteContent?.accountAccessSettings, accountBadge.role, menuId, fallbackRoute)
+  }
 
   useEffect(() => {
     const unlock = () => unlockAppSounds()
