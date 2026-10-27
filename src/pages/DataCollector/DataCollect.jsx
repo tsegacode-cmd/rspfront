@@ -142,9 +142,54 @@ const getStaffFilterDefault = () => {
 }
 
 const getRegistrationStaffValues = record =>
-  [record.staff_username, record.staff_full_name]
+  [record.staff_id, record.staff_username, record.staff_full_name]
     .map(value => String(value || '').trim().toLocaleLowerCase())
     .filter(Boolean)
+
+const getRegistrationStaffOptions = (accounts, records) => {
+  const options = new Map()
+  const addOption = (account, fallback = false) => {
+    if (!account || typeof account !== 'object') return
+    const role = String(account.role || (fallback ? 'staff' : '')).trim().toLowerCase()
+    if (!fallback && !['staff', 'user'].includes(role)) return
+
+    const username = String(account.username || '').trim()
+    const fullName = String(account.full_name || account.fullName || '').trim()
+    const id = String(account.id ?? account._id ?? account.user_id ?? account.staff_id ?? '').trim()
+    const value = username || id || fullName
+    if (!value) return
+
+    const aliases = [username, fullName, id]
+      .map(item => item.toLocaleLowerCase())
+      .filter(Boolean)
+    const key = value.toLocaleLowerCase()
+    const label = username && fullName
+      ? `${fullName} (@${username}) · ${role || 'staff'}`
+      : `${username || fullName || id} · ${role || 'staff'}`
+
+    if (!options.has(key)) options.set(key, { value, label, aliases })
+    else {
+      const existing = options.get(key)
+      existing.aliases = [...new Set([...existing.aliases, ...aliases])]
+    }
+  }
+
+  ;(Array.isArray(accounts) ? accounts : []).forEach(account => addOption(account))
+  ;(Array.isArray(records) ? records : []).forEach(record => {
+    const aliases = getRegistrationStaffValues(record)
+    if (!aliases.length || aliases.some(alias =>
+      [...options.values()].some(option => option.aliases.includes(alias))
+    )) return
+    addOption({
+      staff_id: record.staff_id,
+      username: record.staff_username,
+      full_name: record.staff_full_name,
+      role: 'staff',
+    }, true)
+  })
+
+  return [...options.values()].sort((left, right) => left.label.localeCompare(right.label))
+}
 
 const matchesRegistrationStaffFilter = (record, filter, role) => {
   const recordStaff = getRegistrationStaffValues(record)
@@ -1379,6 +1424,7 @@ function ReportEditRow({ record, onSave, onCancel, colSpan = 16 }) {
 }
 
 function EbcReportTab() {
+  const { staffList: staffAccounts, loading: staffAccountsLoading, error: staffAccountsError } = useStaffList(true)
   const siteContent = useSiteContent()
   const currentRole = getAccountAccessRole().trim().toLowerCase()
   const currentRoleRule = siteContent.accountAccessSettings?.rules?.find(
@@ -1546,11 +1592,9 @@ function EbcReportTab() {
   const selectedProjectTitle = projectFilter === 'all'
     ? 'All Projects'
     : projectOptions.find(title => normalizeProjectTitle(title) === normalizeProjectTitle(projectFilter)) || projectFilter
-  const staffOptions = [...new Set(records
-    .map(record => String(record.staff_username || record.staff_full_name || '').trim())
-    .filter(Boolean))].sort((left, right) => left.localeCompare(right))
+  const staffOptions = getRegistrationStaffOptions(staffAccounts, records)
   const visibleStaffOptions = ['staff', 'user'].includes(currentRole)
-    ? [getStaffFilterDefault()].filter(Boolean)
+    ? staffOptions.filter(option => option.aliases.includes(getStaffFilterDefault().toLocaleLowerCase()))
     : staffOptions
 
   /* inline update */
@@ -1836,12 +1880,14 @@ function EbcReportTab() {
         </div>
 
         <div className="rpt-round-filter">
-          <label>Staff:</label>
-          <select className="ebc-select rpt-round-select" value={staffFilter} onChange={event => setStaffFilter(event.target.value)}>
-            {!['staff', 'user'].includes(currentRole) && <option value="all">All Staff</option>}
-            {visibleStaffOptions.map(staff => <option key={staff} value={staff}>{staff}</option>)}
+          <label htmlFor="individual-report-staff-filter">Staff / User:</label>
+          <select id="individual-report-staff-filter" className="ebc-select rpt-round-select" value={staffFilter} onChange={event => setStaffFilter(event.target.value)}>
+            {!['staff', 'user'].includes(currentRole) && <option value="all">All Staff &amp; Users</option>}
+            {visibleStaffOptions.map(staff => <option key={staff.value} value={staff.value}>{staff.label}</option>)}
           </select>
         </div>
+        {staffAccountsLoading && <span className="rpt-filter-hint" role="status">Loading staff and user accounts…</span>}
+        {staffAccountsError && <span className="rpt-filter-error" role="alert">Could not load staff accounts: {staffAccountsError}</span>}
 
         <div className="rpt-round-filter">
           <label>Date:</label>
@@ -3152,6 +3198,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
 
 /* Organization Report Content */
 function OrgReportContent({ onEdit }) {
+  const { staffList: staffAccounts, loading: staffAccountsLoading, error: staffAccountsError } = useStaffList(true)
   const currentRole = getAccountAccessRole()
   const siteContent = useSiteContent()
   const currentRoleRule = siteContent.accountAccessSettings?.rules?.find(
@@ -3322,11 +3369,9 @@ function OrgReportContent({ onEdit }) {
   const selectedProjectTitle = projectFilter === 'all'
     ? 'All Projects'
     : projectOptions.find(title => normalizeProjectTitle(title) === normalizeProjectTitle(projectFilter)) || projectFilter
-  const staffOptions = [...new Set(records
-    .map(record => String(record.staff_username || record.staff_full_name || '').trim())
-    .filter(Boolean))].sort((left, right) => left.localeCompare(right))
+  const staffOptions = getRegistrationStaffOptions(staffAccounts, records)
   const visibleStaffOptions = ['staff', 'user'].includes(currentRole)
-    ? [getStaffFilterDefault()].filter(Boolean)
+    ? staffOptions.filter(option => option.aliases.includes(getStaffFilterDefault().toLocaleLowerCase()))
     : staffOptions
 
   const exportTitle = `Organizations_${statusFilter === 'all' ? 'All_Statuses' : statusFilter}`
@@ -3471,12 +3516,14 @@ function OrgReportContent({ onEdit }) {
         </div>
 
         <div className="rpt-round-filter">
-          <label>Staff:</label>
-          <select className="ebc-select rpt-round-select" value={staffFilter} onChange={event => setStaffFilter(event.target.value)}>
-            {!['staff', 'user'].includes(currentRole) && <option value="all">All Staff</option>}
-            {visibleStaffOptions.map(staff => <option key={staff} value={staff}>{staff}</option>)}
+          <label htmlFor="organization-report-staff-filter">Staff / User:</label>
+          <select id="organization-report-staff-filter" className="ebc-select rpt-round-select" value={staffFilter} onChange={event => setStaffFilter(event.target.value)}>
+            {!['staff', 'user'].includes(currentRole) && <option value="all">All Staff &amp; Users</option>}
+            {visibleStaffOptions.map(staff => <option key={staff.value} value={staff.value}>{staff.label}</option>)}
           </select>
         </div>
+        {staffAccountsLoading && <span className="rpt-filter-hint" role="status">Loading staff and user accounts…</span>}
+        {staffAccountsError && <span className="rpt-filter-error" role="alert">Could not load staff accounts: {staffAccountsError}</span>}
 
         <div className="rpt-round-filter">
           <label>Date:</label>
