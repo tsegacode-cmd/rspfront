@@ -24,6 +24,12 @@ const formatDate = (dateString) => {
   }
 }
 
+const formatDateTimeLocal = value => {
+  if (!value) return ''
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 16)
+}
+
 // Helper function to safely get registration ID (MongoDB compatible)
 const getRegistrationId = (registration) => {
   console.log('🔍 GET REGISTRATION ID');
@@ -99,6 +105,14 @@ function Registered() {
   const deleteIconVisibility = permissions.icons?.deleteIcon || 'visible'
   
   const [editFormData, setEditFormData] = useState({
+    receipt_no: '',
+    round: '1',
+    project_title: '',
+    national_id: '',
+    city: '',
+    address: '',
+    payment_period_type: '',
+    registration_datetime: '',
     work_type: '',
     staff_id: '',
     staff_username: '',
@@ -307,6 +321,14 @@ function Registered() {
   const handleEditClick = (registration) => {
     setEditingRegistration(registration)
     setEditFormData({
+      receipt_no: registration.receipt_no || '',
+      round: String(registration.round || 1),
+      project_title: registration.project_title || '',
+      national_id: registration.national_id || '',
+      city: registration.city || '',
+      address: registration.address || '',
+      payment_period_type: registration.payment_period_type || '',
+      registration_datetime: registration.registration_datetime || '',
       work_type: registration.work_type,
       staff_id: registration.staff_id || '',
       staff_username: registration.staff_username,
@@ -381,6 +403,14 @@ function Registered() {
     
     try {
       const updateData = {
+        receipt_no: editFormData.receipt_no.trim() || null,
+        round: Number(editFormData.round),
+        project_title: editFormData.project_title.trim() || null,
+        national_id: editFormData.national_id.trim() || null,
+        city: editFormData.city.trim() || null,
+        address: editFormData.address.trim() || null,
+        payment_period_type: editFormData.payment_period_type.trim() || null,
+        registration_datetime: editFormData.registration_datetime || null,
         work_type: editFormData.work_type,
         staff_id: editFormData.staff_id || null,
         staff_username: editFormData.staff_username,
@@ -488,11 +518,17 @@ function Registered() {
     const worksheet = XLSX.utils.json_to_sheet(
       filteredRegistrations.map((reg, index) => ({
         '#': index + 1,
+        'Registration ID': reg.receipt_no || reg.registration_id || reg._id || reg.id || 'N/A',
+        'Round': reg.round || 1,
+        'Project Title': reg.project_title || 'N/A',
         'Status': reg.payment_status === 'paid' ? 'PAID' : 'UNPAID',
         'Staff Name': reg.staff_username || 'N/A',
         'Full Name': reg.staff_full_name || 'N/A',
         'Work Type': reg.work_type,
         'Client Name': reg.client_name,
+        'National ID': reg.national_id || 'N/A',
+        'City': reg.city || 'N/A',
+        'Address': reg.address || 'N/A',
         'Kebele': reg.kebele,
         'House No': reg.house_no || 'N/A',
         'Phone': reg.client_phone,
@@ -502,9 +538,11 @@ function Registered() {
         'Condition': reg.condition,
         'Sign': reg.sign,
         'Gov Letter': reg.gov_letter || 'N/A',
-        'Paid Amount': reg.paid_amount ? `${reg.paid_amount} Birr` : 'N/A',
+        'Paid Amount': reg.paid_amount != null ? `${reg.paid_amount} Birr` : 'N/A',
         'Transaction Number': reg.transaction_number || 'N/A',
-        'Registered': formatDate(reg.registered_at)
+        'Receipt Number': reg.receipt_no || 'N/A',
+        'Payment Year': reg.payment_period_type || 'N/A',
+        'Registered': formatDate(reg.registered_at || reg.created_at)
       }))
     )
     const workbook = XLSX.utils.book_new()
@@ -531,11 +569,17 @@ function Registered() {
     
     const tableData = filteredRegistrations.map((reg, index) => [
       index + 1,
+      reg.receipt_no || reg.registration_id || reg._id || reg.id || 'N/A',
+      reg.round || 1,
+      reg.project_title || 'N/A',
       reg.payment_status === 'paid' ? 'PAID' : 'UNPAID',
       reg.staff_username || 'N/A',
       reg.staff_full_name || 'N/A',
       reg.work_type,
       reg.client_name,
+      reg.national_id || 'N/A',
+      reg.city || 'N/A',
+      reg.address || 'N/A',
       reg.kebele,
       reg.house_no || 'N/A',
       reg.client_phone,
@@ -545,14 +589,16 @@ function Registered() {
       reg.condition,
       reg.sign,
       reg.gov_letter || 'N/A',
-      reg.paid_amount ? `${reg.paid_amount} Birr` : 'N/A',
+      reg.paid_amount != null ? `${reg.paid_amount} Birr` : 'N/A',
       reg.transaction_number || 'N/A',
-      formatDate(reg.registered_at)
+      reg.receipt_no || 'N/A',
+      reg.payment_period_type || 'N/A',
+      formatDate(reg.registered_at || reg.created_at)
     ])
     
     doc.autoTable({
       startY: 38,
-      head: [['#', 'Status', 'Staff', 'Full Name', 'Work Type', 'Client', 'Kebele', 'House', 'Phone', 'TV', 'Person', 'Email', 'Condition', 'Sign', 'Gov Letter', 'Payment', 'Transaction #', 'Date']],
+      head: [['#', 'Registration ID', 'Round', 'Project', 'Status', 'Staff', 'Full Name', 'Work Type', 'Client', 'National ID', 'City', 'Address', 'Kebele', 'House', 'Phone', 'TV', 'Person', 'Email', 'Condition', 'Sign', 'Gov Letter', 'Payment', 'Transaction #', 'Receipt #', 'Year', 'Date']],
       body: tableData,
       styles: { fontSize: 6, cellPadding: 2 },
       headStyles: { fillColor: [196, 30, 58], textColor: [255, 255, 255] },
@@ -717,9 +763,15 @@ function Registered() {
               <thead>
                 <tr>
                   <th>#</th>
+                  <th>Registration ID</th>
+                  <th>Round</th>
+                  <th>Project</th>
                   <th>Status</th>
                   <th>Staff Name</th>
                   <th>Full Name</th>
+                  <th>National ID</th>
+                  <th>City</th>
+                  <th>Address</th>
                   <th>Work Type</th>
                   <th>Client Name</th>
                   <th>Kebele</th>
@@ -747,6 +799,9 @@ function Registered() {
                     return (
                   <tr key={getRegistrationId(registration) || index}>
                     <td>{globalIndex + 1}</td>
+                    <td>{registration.receipt_no || registration.registration_id || registration._id || registration.id || 'N/A'}</td>
+                    <td>{registration.round || 1}</td>
+                    <td>{registration.project_title || 'N/A'}</td>
                     <td>
                       <span className={`status-badge ${registration.payment_status === 'paid' ? 'paid' : 'unpaid'}`}>
                         {registration.payment_status === 'paid' ? 'PAID' : 'UNPAID'}
@@ -754,6 +809,9 @@ function Registered() {
                     </td>
                     <td>{registration.staff_username || 'N/A'}</td>
                     <td>{registration.staff_full_name || 'N/A'}</td>
+                    <td>{registration.national_id || 'N/A'}</td>
+                    <td>{registration.city || 'N/A'}</td>
+                    <td>{registration.address || 'N/A'}</td>
                     <td>
                       <span className="badge-work">{registration.work_type}</span>
                     </td>
@@ -784,7 +842,7 @@ function Registered() {
                       </span>
                     </td>
                     <td>
-                      {registration.paid_amount ? (
+                      {registration.paid_amount != null ? (
                         <span className="badge-amount">
                           {registration.paid_amount} Birr
                         </span>
@@ -801,7 +859,7 @@ function Registered() {
                         <span className="badge-no-date">N/A</span>
                       )}
                     </td>
-                    <td>{formatDate(registration.registered_at)}</td>
+                    <td>{formatDate(registration.registered_at || registration.created_at)}</td>
                     <td>{registration.transaction_number || 'N/A'}</td>
                     <td>
                       {registration.has_registration_image ? (
@@ -906,6 +964,36 @@ function Registered() {
             
             <form onSubmit={handleUpdateRegistration} className="edit-form">
               <div className="form-grid">
+                <div className="form-group">
+                  <label htmlFor="receipt_no">Registration / Receipt ID</label>
+                  <input id="receipt_no" name="receipt_no" value={editFormData.receipt_no} onChange={handleEditInputChange} maxLength="50" />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="round">Round</label>
+                  <input id="round" name="round" type="number" min="1" step="1" value={editFormData.round} onChange={handleEditInputChange} required />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="project_title">Project Title</label>
+                  <input id="project_title" name="project_title" value={editFormData.project_title} onChange={handleEditInputChange} />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="national_id">National ID</label>
+                  <input id="national_id" name="national_id" value={editFormData.national_id} onChange={handleEditInputChange} maxLength="100" />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="city">City</label>
+                  <input id="city" name="city" value={editFormData.city} onChange={handleEditInputChange} />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="address">Address</label>
+                  <input id="address" name="address" value={editFormData.address} onChange={handleEditInputChange} />
+                </div>
+
                 <div className="form-group">
                   <label htmlFor="work_type">Work Type *</label>
                   <select
@@ -1104,6 +1192,22 @@ function Registered() {
                     onChange={handleEditInputChange}
                     min="0"
                     step="0.01"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="payment_period_type">Payment Year / Period</label>
+                  <input id="payment_period_type" name="payment_period_type" value={editFormData.payment_period_type} onChange={handleEditInputChange} />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="registration_datetime">Registration Date</label>
+                  <input
+                    type="datetime-local"
+                    id="registration_datetime"
+                    name="registration_datetime"
+                    value={formatDateTimeLocal(editFormData.registration_datetime)}
+                    onChange={handleEditInputChange}
                   />
                 </div>
 
