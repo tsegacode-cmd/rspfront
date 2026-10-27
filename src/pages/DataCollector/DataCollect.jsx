@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { canAccessTab } from '../../utils/permissions'
 import { useTranslation } from '../../hooks/useTranslation'
 import Pagination, { getPageItems, PAGE_SIZE } from '../../components/Pagination'
+import { useSiteContent } from '../../contexts/SiteContentContext'
+import { getAccountAccessRole } from '../../utils/guestAccount'
 
 // Inline page imports — Data Menu modal
 import DataRegistration from './DataRegistration'
@@ -48,11 +50,17 @@ const REPORT_SUB_TABS = [
   { id: 'total', label: 'Total', icon: '📊', color: '#1565c0' }
 ]
 
-/* ── Generate next 6-digit EBC registration number ── */
-let _ebcCounter = 111
-const generateRegNo = () => {
-  const n = _ebcCounter++
-  return String(n).padStart(6, '0')
+/* ── Generate the next unused 6-digit EBC registration number ── */
+const generateRegNo = (records = [], selectedRound = 1) => {
+  const roundRecords = records.filter(record => Number(record.round || 1) === Number(selectedRound))
+  const usedNumbers = new Set(roundRecords.map(record => String(record.receipt_no || '').trim().toLocaleLowerCase()).filter(Boolean))
+  const highestNumber = roundRecords.reduce((highest, record) => {
+    const receiptNumber = String(record.receipt_no || '').trim()
+    return /^\d+$/.test(receiptNumber) ? Math.max(highest, Number(receiptNumber)) : highest
+  }, 110)
+  let nextNumber = highestNumber + 1
+  while (usedNumbers.has(String(nextNumber).padStart(6, '0').toLocaleLowerCase())) nextNumber += 1
+  return String(nextNumber).padStart(6, '0')
 }
 
 const readStoredRound = (key, fallbackKey) => {
@@ -109,6 +117,24 @@ const escapeHtml = (value) => String(value ?? '—')
 
 const getRegistrationId = (record) =>
   record.receipt_no || record.registration_id || record.registrationId || record._id || record.id || '—'
+
+const getIndividualReportRow = record => ({
+  'Reg ID': getRegistrationId(record),
+  'Round': record.round || 1,
+  'Project Title': getRegistrationProjectTitle(record) || '—',
+  'Full Name': record.client_name || '—',
+  'National ID': record.national_id || '—',
+  'City': record.city || '—',
+  'Address': record.address || '—',
+  'Kebele': record.kebele || '—',
+  'House No': record.house_no || '—',
+  'Phone': record.client_phone || '—',
+  'Staff': record.staff_username || '—',
+  'Amount (ETB)': record.paid_amount ?? '',
+  'Payment Year': record.payment_period_type || '—',
+  'Status': record.payment_status || 'unpaid',
+  'Registered At': record.registered_at || record.created_at || '—',
+})
 
 const buildReportFilename = (report, projectTitle, roundFilter, extension) => {
   const safePart = (value) => String(value || '')
@@ -311,6 +337,10 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
   }, [])
 
   useEffect(() => {
+    if (regNoAuto && !saved) setRegNo(generateRegNo(existingRecords, round))
+  }, [existingRecords, round, regNoAuto, saved])
+
+  useEffect(() => {
     writeStoredFilter('ebc_current_round', String(round))
   }, [round])
 
@@ -323,16 +353,24 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
   const resolvedKebele = form.kebele === 'custom' ? form.kebeleCustom.trim() : form.kebele
   const resolvedYear   = form.paymentYear === 'custom' ? form.paymentYearCustom.trim() : form.paymentYear
 
-  /* ── Duplicate check — same phone + kebele + round ── */
-  const checkDuplicate = () => {
-    if (!form.phoneNo.trim() || !resolvedKebele) return false
-    return existingRecords.some(r =>
+  /* ── Duplicate check — receipt number or same phone + kebele + round ── */
+  const findDuplicate = () => {
+    const normalizedReceiptNumber = regNo.trim().toLocaleLowerCase()
+    const receiptDuplicate = normalizedReceiptNumber && existingRecords.find(record =>
+      String(record.receipt_no || '').trim().toLocaleLowerCase() === normalizedReceiptNumber &&
+      Number(record.round || 1) === Number(roundRef.current)
+    )
+    if (receiptDuplicate) return { type: 'receipt', record: receiptDuplicate }
+
+    if (!form.phoneNo.trim() || !resolvedKebele) return null
+    const contactDuplicate = existingRecords.find(r =>
       r.client_phone?.trim() === form.phoneNo.trim() &&
       r.kebele?.trim()       === resolvedKebele &&
       Number(r.round || 1)   === Number(roundRef.current) &&
       r.person !== 'organization' &&
       r.client_type !== 'organization'
     )
+    return contactDuplicate ? { type: 'contact', record: contactDuplicate } : null
   }
 
   /* ── Build DB payload ── */
@@ -379,9 +417,11 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
     const selectedRound = Number(roundRef.current)
     setLoading(true); setError(null)
     try {
-      const isDup = checkDuplicate()
-      if (isDup) {
-        setError(`⚠️ Duplicate: A Round ${selectedRound} record with Phone "${form.phoneNo.trim()}" and Kebele "${resolvedKebele}" already exists.`)
+      const duplicate = findDuplicate()
+      if (duplicate) {
+        setError(duplicate.type === 'receipt'
+          ? `⚠️ Duplicate: Receipt number "${regNo.trim()}" already exists in Round ${selectedRound}.`
+          : `⚠️ Duplicate: A Round ${selectedRound} record with Phone "${form.phoneNo.trim()}" and Kebele "${resolvedKebele}" already exists.`)
         setLoading(false); return
       }
       const { dataRegistrationAPI } = await import('../../services/api.js')
@@ -407,9 +447,11 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
     }
     setLoading(true); setError(null)
     try {
-      const isDup = checkDuplicate()
-      if (isDup) {
-        setError(`⚠️ Duplicate: A Round ${selectedRound} record with Phone "${form.phoneNo.trim()}" and Kebele "${resolvedKebele}" already exists.`)
+      const duplicate = findDuplicate()
+      if (duplicate) {
+        setError(duplicate.type === 'receipt'
+          ? `⚠️ Duplicate: Receipt number "${regNo.trim()}" already exists in Round ${selectedRound}.`
+          : `⚠️ Duplicate: A Round ${selectedRound} record with Phone "${form.phoneNo.trim()}" and Kebele "${resolvedKebele}" already exists.`)
         setLoading(false); return
       }
       const { dataRegistrationAPI } = await import('../../services/api.js')
@@ -517,7 +559,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
     setFilledFromSearch(false)
     setNameSuggestionsOpen(false)
     handleUseDefaults({ applyRound: false })
-    if (regNoAuto) setRegNo(generateRegNo())
+    if (regNoAuto) setRegNo(generateRegNo(existingRecords, roundRef.current))
   }
 
   /* Load defaults from localStorage */
@@ -724,7 +766,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
               disabled={isReadOnly || loading}
               onChange={e => {
                 setRegNoAuto(e.target.checked)
-                if (e.target.checked) setRegNo(generateRegNo())
+                if (e.target.checked) setRegNo(generateRegNo(existingRecords, roundRef.current))
               }}
             />
             <span>Auto-generate receipt number</span>
@@ -1146,6 +1188,12 @@ function ReportEditRow({ record, onSave, onCancel }) {
 }
 
 function EbcReportTab() {
+  const siteContent = useSiteContent()
+  const currentRole = getAccountAccessRole()
+  const currentRoleRule = siteContent.accountAccessSettings?.rules?.find(rule => rule.role === currentRole)
+  const canDeleteRegistrations = typeof currentRoleRule?.actions?.deleteRegistrations === 'boolean'
+    ? currentRoleRule.actions.deleteRegistrations
+    : ['admin', 'root'].includes(currentRole)
   const [subTab,      setSubTab]      = useState(() => readStoredFilter('ebc_report_subtab', 'total'))
   const [records,     setRecords]     = useState([])
   const [projectTitles, setProjectTitles] = useState(readProjectTitles)
@@ -1156,6 +1204,7 @@ function EbcReportTab() {
   const [sortAsc,     setSortAsc]     = useState(true)
   const [editId,      setEditId]      = useState(null)
   const [saving,      setSaving]      = useState(false)
+  const [deletingId,  setDeletingId]  = useState(null)
   const [roundFilter, setRoundFilter] = useState(() => readStoredFilter('ebc_report_round_filter', 'all'))
   const [projectFilter, setProjectFilter] = useState(() => readStoredFilter('ebc_report_project_filter', 'all'))
   const [reportPage, setReportPage] = useState(0)
@@ -1233,7 +1282,7 @@ function EbcReportTab() {
   const q = query.trim().toLowerCase()
   if (q) {
     base = base.filter(r =>
-      [r.client_name, r.client_phone, r.kebele, r.receipt_no,
+      [r.client_name, r.national_id, r.client_phone, r.kebele, r.receipt_no,
        r.staff_username, r.house_no, r.payment_period_type,
        r.payment_status, r.paid_amount != null ? String(r.paid_amount) : '',
        getRegistrationProjectTitle(r), r.round ? `R${r.round}` : '']
@@ -1300,6 +1349,33 @@ function EbcReportTab() {
     finally { setSaving(false) }
   }
 
+  const handleDeleteRegistration = async record => {
+    const id = record._id || record.id
+    if (!id) {
+      setError('Cannot delete this registration because it has no database ID.')
+      return
+    }
+    const receiptNumber = record.receipt_no || id
+    if (!window.confirm(`Delete registration ${receiptNumber} (Round ${record.round || 1}) for ${record.client_name || 'this client'}? This permanently removes it from Neon.`)) {
+      return
+    }
+
+    setDeletingId(id)
+    setError(null)
+    try {
+      const { dataRegistrationAPI } = await import('../../services/api.js')
+      const response = await dataRegistrationAPI.deleteRegistration(id)
+      if (!response?.success) throw new Error(response?.message || 'The server did not confirm the deletion.')
+      setRecords(previous => previous.filter(item => String(item._id || item.id) !== String(id)))
+      setEditId(current => String(current) === String(id) ? null : current)
+    } catch (deleteError) {
+      console.error('Could not delete registration from the report:', deleteError)
+      setError(`Could not delete registration: ${deleteError.message}`)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   /* PDF download using jsPDF + autoTable */
   const downloadPDF = async () => {
     try {
@@ -1330,22 +1406,11 @@ function EbcReportTab() {
       doc.setTextColor(90, 90, 90)
       doc.text(`Generated: ${new Date().toLocaleString()}   Total: ${sorted.length}`, 14, 40)
       doc.setTextColor(0, 0, 0)
+      const reportRows = sorted.map(getIndividualReportRow)
       doc.autoTable({
         startY: 45,
-        head: [['Reg ID','Round','Project Title','Name','Kebele','House No','Phone','Staff','Amount','Year','Status']],
-        body: sorted.map(r => [
-          getRegistrationId(r),
-          `R${r.round || 1}`,
-          getRegistrationProjectTitle(r) || '—',
-          r.client_name || '—',
-          r.kebele || '—',
-          r.house_no || '—',
-          r.client_phone || '—',
-          r.staff_username || '—',
-          r.paid_amount != null ? `ETB ${r.paid_amount}` : '—',
-          r.payment_period_type || '—',
-          r.payment_status || '—',
-        ]),
+        head: [Object.keys(reportRows[0] || getIndividualReportRow({}))],
+        body: reportRows.map(row => Object.values(row)),
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [196, 30, 58], textColor: 255, fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 245, 245] },
@@ -1375,21 +1440,7 @@ function EbcReportTab() {
       const XLSX = await import('xlsx')
       const title = subTab === 'total' ? 'All Records'
                   : subTab === 'paid'  ? 'Paid Records' : 'Unpaid Records'
-      const worksheet = XLSX.utils.json_to_sheet(
-        sorted.map(r => ({
-          'Reg ID': getRegistrationId(r),
-          'Round': r.round || 1,
-          'Project Title': getRegistrationProjectTitle(r) || '—',
-          'Full Name': r.client_name || '—',
-          'Kebele': r.kebele || '—',
-          'House No': r.house_no || '—',
-          'Phone': r.client_phone || '—',
-          'Staff': r.staff_username || '—',
-          'Payment Amount': r.paid_amount != null ? r.paid_amount : '',
-          'Payment Year': r.payment_period_type || '—',
-          'Status': r.payment_status || '—',
-        }))
-      )
+      const worksheet = XLSX.utils.json_to_sheet(sorted.map(getIndividualReportRow))
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, 'EBC Report')
       XLSX.writeFile(workbook, buildReportFilename(title, selectedProjectTitle, roundFilter, 'xlsx'))
@@ -1433,34 +1484,12 @@ function EbcReportTab() {
         <p class="meta">Generated: ${new Date().toLocaleString()} | Total Records: ${sorted.length}</p>
         <table>
           <thead>
-            <tr>
-              <th>Reg ID</th>
-              <th>Round</th>
-              <th>Project Title</th>
-              <th>Full Name</th>
-              <th>Kebele</th>
-              <th>House No</th>
-              <th>Phone</th>
-              <th>Staff</th>
-              <th>Payment</th>
-              <th>Year</th>
-              <th>Status</th>
-            </tr>
+            ${Object.keys(getIndividualReportRow({})).map(header => `<th>${escapeHtml(header)}</th>`).join('')}
           </thead>
           <tbody>
             ${sorted.map(r => `
               <tr>
-                <td>${escapeHtml(getRegistrationId(r))}</td>
-                <td>${escapeHtml(`R${r.round || 1}`)}</td>
-                <td>${escapeHtml(getRegistrationProjectTitle(r))}</td>
-                <td>${escapeHtml(r.client_name)}</td>
-                <td>${escapeHtml(r.kebele)}</td>
-                <td>${escapeHtml(r.house_no)}</td>
-                <td>${escapeHtml(r.client_phone)}</td>
-                <td>${escapeHtml(r.staff_username)}</td>
-                <td>${escapeHtml(r.paid_amount != null ? `ETB ${r.paid_amount}` : '—')}</td>
-                <td>${escapeHtml(r.payment_period_type)}</td>
-                <td>${escapeHtml(r.payment_status)}</td>
+                ${Object.values(getIndividualReportRow(r)).map(value => `<td>${escapeHtml(value)}</td>`).join('')}
               </tr>
             `).join('')}
           </tbody>
@@ -1621,6 +1650,9 @@ function EbcReportTab() {
                   <th onClick={() => toggleSort('round')}>Round{sortIcon('round')}</th>
                   <th onClick={() => toggleSort('project_title')}>Project Title{sortIcon('project_title')}</th>
                   <th onClick={() => toggleSort('client_name')}>Name{sortIcon('client_name')}</th>
+                  <th>National ID</th>
+                  <th>City</th>
+                  <th>Address</th>
                   <th onClick={() => toggleSort('kebele')}>Kebele{sortIcon('kebele')}</th>
                   <th>House No</th>
                   <th onClick={() => toggleSort('client_phone')}>Phone{sortIcon('client_phone')}</th>
@@ -1628,6 +1660,8 @@ function EbcReportTab() {
                   <th onClick={() => toggleSort('paid_amount')}>Payment{sortIcon('paid_amount')}</th>
                   <th>Year</th>
                   <th onClick={() => toggleSort('payment_status')}>Status{sortIcon('payment_status')}</th>
+                  <th>Registered At</th>
+                  {canDeleteRegistrations && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -1646,6 +1680,9 @@ function EbcReportTab() {
                         <td><span className="ebc-round-badge">R{r.round || 1}</span></td>
                         <td className="rpt-project">{getRegistrationProjectTitle(r) || '—'}</td>
                         <td className="rpt-name">{r.client_name || '—'}</td>
+                        <td>{r.national_id || '—'}</td>
+                        <td>{r.city || '—'}</td>
+                        <td>{r.address || '—'}</td>
                         <td>{r.kebele || '—'}</td>
                         <td>{r.house_no || '—'}</td>
                         <td>{r.client_phone || '—'}</td>
@@ -1657,6 +1694,24 @@ function EbcReportTab() {
                             {isPaid ? '✅ Paid' : '⏳ Unpaid'}
                           </span>
                         </td>
+                        <td>{r.registered_at || r.created_at || '—'}</td>
+                        {canDeleteRegistrations && (
+                          <td>
+                            <button
+                              type="button"
+                              className="ebc-btn"
+                              style={{ background: '#b42318', color: '#fff', padding: '6px 10px' }}
+                              onClick={event => {
+                                event.stopPropagation()
+                                handleDeleteRegistration(r)
+                              }}
+                              disabled={deletingId === rid}
+                              aria-label={`Delete registration ${r.receipt_no || rid}`}
+                            >
+                              {deletingId === rid ? 'Deleting…' : '🗑 Delete'}
+                            </button>
+                          </td>
+                        )}
                       </tr>
                       {editId === rid && (
                         <ReportEditRow
@@ -2049,6 +2104,15 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
   const [paidPanelOpen, setPaidPanelOpen] = useState(false)
   const [paidAmount, setPaidAmount] = useState('')
 
+  const findReceiptDuplicate = () => {
+    const receiptNumber = regNo.trim().toLocaleLowerCase()
+    if (!receiptNumber) return null
+    return existingRecords.find(record =>
+      String(record.receipt_no || '').trim().toLocaleLowerCase() === receiptNumber &&
+      Number(record.round || 1) === Number(roundRef.current)
+    )
+  }
+
   useSavedProjectTitleSettings(setProductTitles, setForm, setError)
 
   useEffect(() => {
@@ -2059,9 +2123,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
         const response = await dataRegistrationAPI.getAllRegistrations()
         const registrations = response?.data || response?.registrations || []
         if (!cancelled) {
-          setExistingRecords(registrations.filter(record =>
-            record.person === 'organization' || record.client_type === 'organization'
-          ))
+          setExistingRecords(registrations)
         }
       } catch (loadError) {
         if (!cancelled) setError(`Could not load organization name suggestions: ${loadError.message}`)
@@ -2070,6 +2132,10 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     loadRegistrations()
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    if (regNoAuto && !saved) setRegNo(generateRegNo(existingRecords, round))
+  }, [existingRecords, round, regNoAuto, saved])
 
   useEffect(() => {
     writeStoredFilter('ebc_org_current_round', String(round))
@@ -2213,12 +2279,17 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     const selectedRound = Number(roundRef.current)
     setLoading(true); setError(null)
     try {
+      if (findReceiptDuplicate()) {
+        setError(`⚠️ Duplicate: Receipt number "${regNo.trim()}" already exists in Round ${selectedRound}.`)
+        setLoading(false); return
+      }
       const { dataRegistrationAPI } = await import('../../services/api.js')
       const res = await dataRegistrationAPI.createRegistration(
         buildPayload({ payment_status: 'unpaid' }, selectedRound)
       )
       assertRegistrationRound(res, selectedRound)
       setRecordId(res?.data?.id ?? res?.data?._id ?? null)
+      setExistingRecords(previous => [res.data, ...previous])
       setSaved(true); setEditMode(false); setConfirmed(false)
     } catch (err) {
       setError('Save failed: ' + (err.message || 'Unknown error'))
@@ -2234,12 +2305,17 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     }
     setLoading(true); setError(null)
     try {
+      if (findReceiptDuplicate()) {
+        setError(`⚠️ Duplicate: Receipt number "${regNo.trim()}" already exists in Round ${selectedRound}.`)
+        setLoading(false); return
+      }
       const { dataRegistrationAPI } = await import('../../services/api.js')
       const res = await dataRegistrationAPI.createRegistration(
         buildPayload({ payment_status: 'paid', paid_amount: parseFloat(paidAmount) }, selectedRound)
       )
       assertRegistrationRound(res, selectedRound)
       setRecordId(res?.data?.id ?? res?.data?._id ?? null)
+      setExistingRecords(previous => [res.data, ...previous])
       setForm(prev => ({ ...prev, payment: paidAmount }))
       setSaved(true); setConfirmed(true); setPaidDone(true)
       setEditMode(false); setPaidPanelOpen(false)
@@ -2326,7 +2402,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     setPaidPanelOpen(false); setPaidAmount('')
     setNameSuggestionsOpen(false)
     handleUseDefaults({ applyRound: false })
-    if (regNoAuto) setRegNo(generateRegNo())
+    if (regNoAuto) setRegNo(generateRegNo(existingRecords, roundRef.current))
   }
 
   /* Load defaults from localStorage */
@@ -2412,7 +2488,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
               disabled={isReadOnly || loading}
               onChange={e => {
                 setRegNoAuto(e.target.checked)
-                if (e.target.checked) setRegNo(generateRegNo())
+                if (e.target.checked) setRegNo(generateRegNo(existingRecords, roundRef.current))
               }}
             />
             <span>Auto-generate receipt number</span>
@@ -2839,7 +2915,7 @@ function OrgReportContent({ onEdit }) {
   if (q) {
     filtered = filtered.filter(r =>
       [r.client_name, r.org_type, r.contact_person, r.client_phone,
-       r.client_email, r.kebele, r.receipt_no, r.staff_username,
+       r.national_id, r.client_email, r.city, r.address, r.kebele, r.receipt_no, r.staff_username,
        r.paid_amount != null ? String(r.paid_amount) : '',
        r.payment_period_type, r.payment_status, getRegistrationProjectTitle(r), r.round ? `R${r.round}` : '']
         .filter(Boolean).some(v => String(v).toLowerCase().includes(q))
@@ -2872,13 +2948,20 @@ function OrgReportContent({ onEdit }) {
     'Round': record.round || 1,
     'Project Title': getRegistrationProjectTitle(record) || '—',
     'Organization Name': record.client_name || '—',
+    'National ID': record.national_id || '—',
     'Type': record.org_type || '—',
     'Contact Person': record.contact_person || '—',
     'Phone': record.client_phone || '—',
+    'Email': record.client_email || '—',
+    'City': record.city || '—',
+    'Address': record.address || '—',
     'Kebele': record.kebele || '—',
+    'House No': record.house_no || '—',
+    'Staff': record.staff_username || '—',
     'Payment': record.paid_amount != null ? `ETB ${record.paid_amount}` : '—',
     'Year': record.payment_period_type || '—',
     'Status': isRegistrationPaid(record) ? 'Paid' : 'Unpaid',
+    'Registered At': record.registered_at || record.created_at || '—',
   }))
 
   const downloadOrganizationPDF = async () => {
@@ -2907,8 +2990,9 @@ function OrgReportContent({ onEdit }) {
         startY: 45,
         head: [Object.keys(exportRows[0] || {
           'Reg ID': '', 'Round': '', 'Project Title': '', 'Organization Name': '',
-          'Type': '', 'Contact Person': '', 'Phone': '', 'Kebele': '',
-          'Payment': '', 'Year': '', 'Status': '',
+          'National ID': '', 'Type': '', 'Contact Person': '', 'Phone': '',
+          'Email': '', 'City': '', 'Address': '', 'Kebele': '', 'House No': '',
+          'Staff': '', 'Payment': '', 'Year': '', 'Status': '', 'Registered At': '',
         })],
         body: exportRows.map(row => Object.values(row)),
         styles: { fontSize: 8, cellPadding: 3 },
@@ -2939,8 +3023,9 @@ function OrgReportContent({ onEdit }) {
     try {
       const headers = Object.keys(exportRows[0] || {
         'Reg ID': '', 'Round': '', 'Project Title': '', 'Organization Name': '',
-        'Type': '', 'Contact Person': '', 'Phone': '', 'Kebele': '',
-        'Payment': '', 'Year': '', 'Status': '',
+        'National ID': '', 'Type': '', 'Contact Person': '', 'Phone': '',
+        'Email': '', 'City': '', 'Address': '', 'Kebele': '', 'House No': '',
+        'Staff': '', 'Payment': '', 'Year': '', 'Status': '', 'Registered At': '',
       })
       const htmlContent = `<!DOCTYPE html>
         <html><head><meta charset="utf-8"><title>Organization Registration Report</title>
@@ -3062,13 +3147,20 @@ function OrgReportContent({ onEdit }) {
                   <th>Round</th>
                   <th>Project Title</th>
                   <th>Organization Name</th>
+                  <th>National ID</th>
                   <th>Type</th>
                   <th>Contact Person</th>
                   <th>Phone</th>
+                  <th>Email</th>
+                  <th>City</th>
+                  <th>Address</th>
                   <th>Kebele</th>
+                  <th>House No</th>
+                  <th>Staff</th>
                   <th>Payment</th>
                   <th>Year</th>
                   <th>Status</th>
+                  <th>Registered At</th>
                 </tr>
               </thead>
               <tbody>
@@ -3085,10 +3177,16 @@ function OrgReportContent({ onEdit }) {
                       <td><span className="ebc-round-badge">R{r.round || 1}</span></td>
                       <td className="rpt-project">{getRegistrationProjectTitle(r) || '—'}</td>
                       <td className="rpt-name">{r.client_name || '—'}</td>
+                      <td>{r.national_id || '—'}</td>
                       <td>{r.org_type || '—'}</td>
                       <td>{r.contact_person || '—'}</td>
                       <td>{r.client_phone || '—'}</td>
+                      <td>{r.client_email || '—'}</td>
+                      <td>{r.city || '—'}</td>
+                      <td>{r.address || '—'}</td>
                       <td>{r.kebele || '—'}</td>
+                      <td>{r.house_no || '—'}</td>
+                      <td>{r.staff_username || '—'}</td>
                       <td>{r.paid_amount != null ? `ETB ${r.paid_amount}` : '—'}</td>
                       <td>{r.payment_period_type || '—'}</td>
                       <td>
@@ -3096,6 +3194,7 @@ function OrgReportContent({ onEdit }) {
                           {isPaid ? '✅ Paid' : '⏳ Unpaid'}
                         </span>
                       </td>
+                      <td>{r.registered_at || r.created_at || '—'}</td>
                     </tr>
                   )
                 })}
