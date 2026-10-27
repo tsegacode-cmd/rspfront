@@ -1,4 +1,5 @@
 export const SITE_ACCOUNT_ROLES = [
+  { key: 'visitor', label: 'Not logged in' },
   { key: 'guest', label: 'Guest' },
   { key: 'user', label: 'User' },
   { key: 'staff', label: 'Staff' },
@@ -47,6 +48,7 @@ export const SITE_HEADER_MENUS = [
 ]
 
 export const DEFAULT_ROLE_HIDDEN_MENUS = {
+  visitor: [],
   guest: ['data-collect'],
   user: ['data-collect'],
   staff: [],
