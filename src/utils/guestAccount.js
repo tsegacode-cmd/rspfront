@@ -417,12 +417,14 @@ export const getAccountRole = () => {
 
 export const getAccountAccessRole = () => {
   try {
+    if (localStorage.getItem('rootToken')) return 'root'
+    if (!localStorage.getItem('authToken') || !localStorage.getItem('userData')) return 'visitor'
     if (isGuestMode()) return 'guest'
     const user = JSON.parse(localStorage.getItem('userData') || '{}')
-    return String(user.role || '').trim().toLowerCase() || 'staff'
+    return String(user.role || '').trim().toLowerCase() || 'visitor'
   } catch (error) {
     console.error('Failed to read the account access role:', error)
-    return 'staff'
+    return 'visitor'
   }
 }
 
