@@ -207,7 +207,7 @@ function RootSiteContent() {
     <section className="site-content-editor">
       <h2 className="section-title">Website Content &amp; Visibility</h2>
       <p className="section-description">
-        Edit the public Home page, header, footer, and Contact page text, manage maintenance mode, and control page visibility by account role.
+        Edit the public Home page, header, footer, and Contact page text, manage maintenance mode, and control page visibility by account role or for visitors who are not logged in.
       </p>
       {error && <p className="site-content-message error" role="alert">{error}</p>}
       {saved && <p className="site-content-message success" role="status">Website content saved.</p>}
@@ -571,10 +571,10 @@ function RootSiteContent() {
                   enabled: event.target.checked,
                 })}
               />
-              Enable role-based menu visibility
+              Enable account and visitor menu visibility
             </label>
             <p className="section-description">
-              Choose which website pages and menus are available for each account role. Hiding a page also blocks direct access and hides its matching navigation entry. Individual-user overrides are not configured. Root Admin access is not affected.
+              Choose which website pages and menus are available for each account role, including visitors who are not logged in. The “Not logged in” column is separate from Guest accounts. Hiding a page also blocks direct access and hides its matching navigation entry. Individual-user overrides are not configured. Root Admin access is not affected.
             </p>
             <div className="site-menu-visibility-table-wrap">
               <table className="site-menu-visibility-table">
