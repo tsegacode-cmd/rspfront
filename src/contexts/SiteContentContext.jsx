@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { siteContentAPI } from '../services/api'
 import { DEFAULT_ROLE_HIDDEN_MENUS, SITE_ACCOUNT_ROLES } from '../utils/siteMenuVisibility'
 
@@ -92,6 +92,7 @@ export const DEFAULT_SITE_CONTENT = {
   termsAndConditions: 'Welcome to REDSEA.\n\nUse the platform respectfully and provide accurate information. Rewards, promotions, and claim-game settings are managed by REDSEA and may change over time. Do not use multiple accounts, automated tools, or other methods to manipulate rewards.\n\nETB rewards are credited according to the applicable reward rules. Coin rewards are separate from ETB wallet balances. Daily Claim games have per-game limits and rolling 24-hour cooldowns. Review the reward and cooldown shown in the app before playing.\n\nBookings, payment requests, products, and services are subject to availability and the payment terms shown at checkout. Optional delivery fees are separate from booking payments and are due on receipt when delivery is requested.\n\nBy using REDSEA, you agree to follow these terms and applicable laws. Contact REDSEA support if you have a question about your account or a reward.',
   accountAccessSettings: {
     enabled: true,
+    visitorMenuVisibilityConfigured: false,
     rules: DEFAULT_ACCOUNT_ACCESS_RULES,
   }
 }
@@ -100,19 +101,25 @@ const SiteContentContext = createContext(DEFAULT_SITE_CONTENT)
 
 export function SiteContentProvider({ children }) {
   const [siteContent, setSiteContent] = useState(DEFAULT_SITE_CONTENT)
+  const receivedContentUpdate = useRef(false)
 
   useEffect(() => {
     let active = true
     siteContentAPI.get()
       .then(response => {
-        if (active) setSiteContent({ ...DEFAULT_SITE_CONTENT, ...response.data })
+        if (active && !receivedContentUpdate.current) {
+          setSiteContent({ ...DEFAULT_SITE_CONTENT, ...response.data })
+        }
       })
       .catch(error => {
         if (active) console.error('Could not load website content:', error)
       })
 
     const applyContentUpdate = content => {
-      if (content) setSiteContent({ ...DEFAULT_SITE_CONTENT, ...content })
+      if (content) {
+        receivedContentUpdate.current = true
+        setSiteContent({ ...DEFAULT_SITE_CONTENT, ...content })
+      }
     }
     const handleContentUpdate = event => applyContentUpdate(event.detail)
     const handleStorageUpdate = event => {
