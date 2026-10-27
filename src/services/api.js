@@ -102,15 +102,15 @@ const getUrlsToTry = (endpoint, preferredBaseUrl) => {
 export const getApiHealthUrls = () =>
   isApiBackendConfigured() ? getUrlsToTry('/health') : [];
 
-// Allow time for backend cold starts and Neon queries, but avoid hanging indefinitely.
-const fetchWithTimeout = async (url, config, ms = 60000) => {
+// Allow time for a Render cold start while keeping API requests bounded.
+const fetchWithTimeout = async (url, config, ms = 30000) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), ms);
   try {
     return await fetch(url, { ...config, signal: controller.signal });
   } catch (error) {
     if (controller.signal.aborted) {
-      const timeoutError = new Error(`The API request timed out after ${Math.ceil(ms / 1000)} seconds.`);
+      const timeoutError = new Error(`The API request was aborted after ${Math.ceil(ms / 1000)} seconds (timeout or connection interruption).`);
       timeoutError.name = 'TimeoutError';
       throw timeoutError;
     }
