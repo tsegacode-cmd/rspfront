@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { dataRegistrationAPI, userAPI } from '../../services/api'
 import { getIconVisibility } from '../../utils/permissions'
 import { usePermissions } from '../../hooks/usePermissions'
+import { getRegistrationExportRows } from '../../utils/registrationExport'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
@@ -516,34 +517,7 @@ function Registered() {
 
   const downloadExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(
-      filteredRegistrations.map((reg, index) => ({
-        '#': index + 1,
-        'Registration ID': reg.receipt_no || reg.registration_id || reg._id || reg.id || 'N/A',
-        'Round': reg.round || 1,
-        'Project Title': reg.project_title || 'N/A',
-        'Status': reg.payment_status === 'paid' ? 'PAID' : 'UNPAID',
-        'Staff Name': reg.staff_username || 'N/A',
-        'Full Name': reg.staff_full_name || 'N/A',
-        'Work Type': reg.work_type,
-        'Client Name': reg.client_name,
-        'National ID': reg.national_id || 'N/A',
-        'City': reg.city || 'N/A',
-        'Address': reg.address || 'N/A',
-        'Kebele': reg.kebele,
-        'House No': reg.house_no || 'N/A',
-        'Phone': reg.client_phone,
-        'TV No': reg.tv_no,
-        'Person': reg.person,
-        'Email': reg.client_email || 'N/A',
-        'Condition': reg.condition,
-        'Sign': reg.sign,
-        'Gov Letter': reg.gov_letter || 'N/A',
-        'Paid Amount': reg.paid_amount != null ? `${reg.paid_amount} Birr` : 'N/A',
-        'Transaction Number': reg.transaction_number || 'N/A',
-        'Receipt Number': reg.receipt_no || 'N/A',
-        'Payment Year': reg.payment_period_type || 'N/A',
-        'Registered': formatDate(reg.registered_at || reg.created_at)
-      }))
+      getRegistrationExportRows(filteredRegistrations, registrations)
     )
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Registered Data')
@@ -567,40 +541,15 @@ function Registered() {
     doc.setTextColor(0, 0, 0)
     doc.text('Registered Data - Filtered Registrations', 14, 32)
     
-    const tableData = filteredRegistrations.map((reg, index) => [
-      index + 1,
-      reg.receipt_no || reg.registration_id || reg._id || reg.id || 'N/A',
-      reg.round || 1,
-      reg.project_title || 'N/A',
-      reg.payment_status === 'paid' ? 'PAID' : 'UNPAID',
-      reg.staff_username || 'N/A',
-      reg.staff_full_name || 'N/A',
-      reg.work_type,
-      reg.client_name,
-      reg.national_id || 'N/A',
-      reg.city || 'N/A',
-      reg.address || 'N/A',
-      reg.kebele,
-      reg.house_no || 'N/A',
-      reg.client_phone,
-      reg.tv_no,
-      reg.person,
-      reg.client_email || 'N/A',
-      reg.condition,
-      reg.sign,
-      reg.gov_letter || 'N/A',
-      reg.paid_amount != null ? `${reg.paid_amount} Birr` : 'N/A',
-      reg.transaction_number || 'N/A',
-      reg.receipt_no || 'N/A',
-      reg.payment_period_type || 'N/A',
-      formatDate(reg.registered_at || reg.created_at)
-    ])
+    const exportRows = getRegistrationExportRows(filteredRegistrations, registrations)
+    const headers = Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])
+    const tableData = exportRows.map(row => headers.map(header => row[header]))
     
     doc.autoTable({
       startY: 38,
-      head: [['#', 'Registration ID', 'Round', 'Project', 'Status', 'Staff', 'Full Name', 'Work Type', 'Client', 'National ID', 'City', 'Address', 'Kebele', 'House', 'Phone', 'TV', 'Person', 'Email', 'Condition', 'Sign', 'Gov Letter', 'Payment', 'Transaction #', 'Receipt #', 'Year', 'Date']],
+      head: [headers],
       body: tableData,
-      styles: { fontSize: 6, cellPadding: 2 },
+      styles: { fontSize: 5, cellPadding: 1.5, overflow: 'linebreak' },
       headStyles: { fillColor: [196, 30, 58], textColor: [255, 255, 255] },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { top: 38 }
