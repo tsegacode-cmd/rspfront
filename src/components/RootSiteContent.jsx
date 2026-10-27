@@ -6,6 +6,7 @@ import './RootSiteContent.css'
 
 const normalizeAccountAccessSettings = (settings = {}) => {
   const rules = Array.isArray(settings.rules) ? settings.rules : []
+  const visitorMenuVisibilityConfigured = settings.visitorMenuVisibilityConfigured === true
   const normalizedRules = rules.map((rule, index) => ({
     role: String(rule?.role || `role_${index + 1}`).trim().toLowerCase(),
     label: String(rule?.label || rule?.role || `Role ${index + 1}`).trim(),
@@ -22,11 +23,14 @@ const normalizeAccountAccessSettings = (settings = {}) => {
         : ['admin', 'root'].includes(String(rule?.role || '').trim().toLowerCase()),
     },
     notes: typeof rule?.notes === 'string' ? rule.notes.slice(0, 500) : '',
-  }))
+  })).map(rule => rule.role === 'visitor' && !visitorMenuVisibilityConfigured
+    ? { ...rule, hiddenMenus: [...new Set([...rule.hiddenMenus, 'data-collect'])] }
+    : rule)
   const existingRoles = new Set(normalizedRules.map(rule => rule.role))
 
   return {
     enabled: settings.enabled !== false,
+    visitorMenuVisibilityConfigured,
     rules: [
       ...normalizedRules,
       ...SITE_ACCOUNT_ROLES
@@ -158,6 +162,9 @@ function RootSiteContent() {
         ...current,
         accountAccessSettings: {
           ...settings,
+          visitorMenuVisibilityConfigured: role === 'visitor'
+            ? true
+            : settings.visitorMenuVisibilityConfigured,
           rules,
         },
       }
