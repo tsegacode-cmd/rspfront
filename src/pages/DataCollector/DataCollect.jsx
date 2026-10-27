@@ -387,7 +387,7 @@ const assertRegistrationPayment = (response, expectedStatus, expectedAmount) => 
   if (!response?.success || !response?.data) {
     throw new Error(response?.message || 'The server did not confirm the payment update.')
   }
-  if (String(response.data.payment_status || '').toLowerCase() !== expectedStatus) {
+  if (String(response.data.payment_status || '').trim().toLowerCase() !== expectedStatus) {
     throw new Error(`The database did not save the expected ${expectedStatus} payment status.`)
   }
   if (expectedAmount !== undefined && Number(response.data.paid_amount) !== expectedAmount) {
