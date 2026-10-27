@@ -16,6 +16,11 @@ const normalizeAccountAccessSettings = (settings = {}) => {
     hiddenRoutes: Array.isArray(rule?.hiddenRoutes)
       ? rule.hiddenRoutes.filter(value => typeof value === 'string').map(value => value.trim().replace(/^\/+/, '').replace(/\/+$/, '')).filter(Boolean)
       : [],
+    actions: {
+      deleteRegistrations: typeof rule?.actions?.deleteRegistrations === 'boolean'
+        ? rule.actions.deleteRegistrations
+        : ['admin', 'root'].includes(String(rule?.role || '').trim().toLowerCase()),
+    },
     notes: typeof rule?.notes === 'string' ? rule.notes.slice(0, 500) : '',
   }))
   const existingRoles = new Set(normalizedRules.map(rule => rule.role))
@@ -32,6 +37,7 @@ const normalizeAccountAccessSettings = (settings = {}) => {
           enabled: true,
           hiddenMenus: DEFAULT_ROLE_HIDDEN_MENUS[key] || [],
           hiddenRoutes: [],
+          actions: { deleteRegistrations: ['admin', 'root'].includes(key) },
           notes: '',
         })),
     ],
@@ -153,6 +159,22 @@ function RootSiteContent() {
         accountAccessSettings: {
           ...settings,
           rules,
+        },
+      }
+    })
+    setSaved(false)
+  }
+
+  const updateRoleRegistrationDeletion = (role, allowed) => {
+    setContent(current => {
+      const settings = normalizeAccountAccessSettings(current.accountAccessSettings)
+      return {
+        ...current,
+        accountAccessSettings: {
+          ...settings,
+          rules: settings.rules.map(rule => rule.role === role
+            ? { ...rule, actions: { ...rule.actions, deleteRegistrations: allowed } }
+            : rule),
         },
       }
     })
@@ -574,7 +596,7 @@ function RootSiteContent() {
               Enable account and visitor menu visibility
             </label>
             <p className="section-description">
-              Choose which website pages and menus are available for each account role, including visitors who are not logged in. The “Not logged in” column is separate from Guest accounts. Hiding a page also blocks direct access and hides its matching navigation entry. Individual-user overrides are not configured. Root Admin access is not affected.
+              Choose which website pages and menus are available for each account role, including visitors who are not logged in. The “Not logged in” column is separate from Guest accounts. Hiding a page also blocks direct access and hides its matching navigation entry. Use the final row to grant registration-delete actions by role. Individual-user overrides are not configured. Root Admin page access is not affected.
             </p>
             <div className="site-menu-visibility-table-wrap">
               <table className="site-menu-visibility-table">
@@ -624,6 +646,26 @@ function RootSiteContent() {
                       })}
                     </tr>
                   ))}
+                  <tr>
+                    <th scope="row">Delete registrations from the Result report</th>
+                    {SITE_ACCOUNT_ROLES.map(role => {
+                      const rule = roleRules.find(item => item.role === role.key)
+                      const allowed = rule?.actions?.deleteRegistrations === true
+                      return (
+                        <td key={role.key}>
+                          <label className="site-menu-visibility-switch">
+                            <input
+                              type="checkbox"
+                              checked={allowed}
+                              aria-label={`${allowed ? 'Allow' : 'Deny'} registration deletion for ${role.label}`}
+                              onChange={event => updateRoleRegistrationDeletion(role.key, event.target.checked)}
+                            />
+                            <span>{allowed ? 'Allowed' : 'Denied'}</span>
+                          </label>
+                        </td>
+                      )
+                    })}
+                  </tr>
                 </tbody>
               </table>
             </div>
