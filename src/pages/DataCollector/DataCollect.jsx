@@ -206,6 +206,16 @@ const matchesRegistrationStaffFilter = (record, filter, role) => {
 const getStaffValue = staff =>
   String(staff?.username || staff?.full_name || staff?.fullName || staff?.id || staff?._id || staff?.email || '').trim()
 
+const getRegistrationStaffLabel = record => {
+  const username = String(record?.staff_username || '').trim()
+  const fullName = String(record?.staff_full_name || '').trim()
+  const identity = fullName && username && fullName.toLocaleLowerCase() !== username.toLocaleLowerCase()
+    ? `${fullName} (@${username})`
+    : fullName || username || '—'
+  const role = String(record?.staff_role || '').trim()
+  return role ? `${identity} · ${role}` : identity
+}
+
 const useRegisteredStaff = (setForm, registeredStaff, defaultKey = 'ebc_default_staff') => {
   const { staffList: allStaff, loading, error } = useStaffList(true)
   const user = useMemo(getCurrentUserProfile, [])
@@ -213,11 +223,11 @@ const useRegisteredStaff = (setForm, registeredStaff, defaultKey = 'ebc_default_
   const staffOptions = useMemo(() => {
     const options = allStaff.filter(staff =>
       staff && typeof staff === 'object' &&
-      String(staff.role || '').trim().toLowerCase() === 'staff'
+      ['staff', 'user', 'manager', 'admin', 'root'].includes(String(staff.role || '').trim().toLowerCase())
     )
     if (['staff', 'user'].includes(currentRole) && getStaffValue(user) &&
-        !options.some(staff => getStaffValue(staff) === getStaffValue(user))) {
-      options.unshift({ ...user, role: 'staff' })
+        !options.some(staff => getStaffValue(staff).toLocaleLowerCase() === getStaffValue(user).toLocaleLowerCase())) {
+      options.unshift({ ...user, role: currentRole })
     }
     return options
   }, [allStaff, currentRole, user])
@@ -236,7 +246,7 @@ const useRegisteredStaff = (setForm, registeredStaff, defaultKey = 'ebc_default_
     const desiredStaff = ['staff', 'user'].includes(currentRole) ? getStaffValue(user) : configuredStaff
     const selected = staffOptions.find(staff =>
       [staff.username, staff.full_name, staff.fullName, staff.id, staff._id]
-        .some(value => String(value || '').trim() === desiredStaff)
+        .some(value => String(value || '').trim().toLocaleLowerCase() === desiredStaff.toLocaleLowerCase())
     ) || (['staff', 'user'].includes(currentRole) ? null : staffOptions[0])
     const selectedValue = getStaffValue(selected) || desiredStaff
     setForm(previous => {
@@ -249,7 +259,9 @@ const useRegisteredStaff = (setForm, registeredStaff, defaultKey = 'ebc_default_
     })
   }, [currentRole, defaultKey, setForm, staffOptions, user])
 
-  const selectedStaff = staffOptions.find(staff => getStaffValue(staff) === registeredStaff)
+  const selectedStaff = staffOptions.find(staff =>
+    getStaffValue(staff).toLocaleLowerCase() === String(registeredStaff || '').trim().toLocaleLowerCase()
+  )
   return { staffOptions, selectedStaff, loading, error }
 }
 
@@ -568,6 +580,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
     staff_id:            selectedStaff?.id || selectedStaff?._id || null,
     staff_username:      selectedStaff?.username || form.registeredStaff.trim() || 'EBC-Staff',
     staff_full_name:     selectedStaff?.full_name || selectedStaff?.fullName || form.registeredStaff.trim() || 'EBC Staff',
+    staff_role:          selectedStaff?.role || getAccountAccessRole(),
     paid_amount:         form.payment ? parseFloat(form.payment) : null,
     payment_period_type: resolvedYear                  || null,
     receipt_no:          regNo.trim() || null,
@@ -1552,7 +1565,7 @@ function EbcReportTab() {
   if (q) {
     base = base.filter(r =>
       [r.client_name, r.national_id, r.client_phone, r.kebele, r.receipt_no,
-       r.staff_username, r.house_no, r.payment_period_type,
+       r.staff_username, r.staff_full_name, r.staff_role, r.house_no, r.payment_period_type,
        r.payment_status, r.paid_amount != null ? String(r.paid_amount) : '',
        getRegistrationProjectTitle(r), r.round ? `R${r.round}` : '']
         .filter(Boolean).some(v => String(v).toLowerCase().includes(q))
@@ -1967,7 +1980,7 @@ function EbcReportTab() {
                   <th onClick={() => toggleSort('kebele')}>Kebele{sortIcon('kebele')}</th>
                   <th>House No</th>
                   <th onClick={() => toggleSort('client_phone')}>Phone{sortIcon('client_phone')}</th>
-                  <th onClick={() => toggleSort('staff_username')}>Staff{sortIcon('staff_username')}</th>
+                  <th onClick={() => toggleSort('staff_full_name')}>Registered By{sortIcon('staff_full_name')}</th>
                   <th onClick={() => toggleSort('paid_amount')}>Payment{sortIcon('paid_amount')}</th>
                   <th>Year</th>
                   <th onClick={() => toggleSort('payment_status')}>Status{sortIcon('payment_status')}</th>
@@ -1997,7 +2010,7 @@ function EbcReportTab() {
                         <td>{r.kebele || '—'}</td>
                         <td>{r.house_no || '—'}</td>
                         <td>{r.client_phone || '—'}</td>
-                        <td>{r.staff_username || '—'}</td>
+                        <td>{getRegistrationStaffLabel(r)}</td>
                         <td>{r.paid_amount != null ? `ETB ${r.paid_amount}` : '—'}</td>
                         <td>{r.payment_period_type || '—'}</td>
                         <td>
@@ -2564,6 +2577,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     staff_id: selectedStaff?.id || selectedStaff?._id || null,
     staff_username: selectedStaff?.username || form.registeredStaff.trim() || 'EBC-Staff',
     staff_full_name: selectedStaff?.full_name || selectedStaff?.fullName || form.registeredStaff.trim() || 'EBC Staff',
+    staff_role: selectedStaff?.role || getAccountAccessRole(),
     paid_amount: form.payment ? parseFloat(form.payment) : null,
     payment_period_type: resolvedYear || null,
     receipt_no: regNo.trim() || null,
@@ -3343,7 +3357,8 @@ function OrgReportContent({ onEdit }) {
   if (q) {
     filtered = filtered.filter(r =>
       [r.client_name, r.org_type, r.contact_person, r.client_phone,
-       r.national_id, r.client_email, r.city, r.address, r.kebele, r.receipt_no, r.staff_username,
+       r.national_id, r.client_email, r.city, r.address, r.kebele, r.receipt_no,
+       r.staff_username, r.staff_full_name, r.staff_role,
        r.paid_amount != null ? String(r.paid_amount) : '',
        r.payment_period_type, r.payment_status, getRegistrationProjectTitle(r), r.round ? `R${r.round}` : '']
         .filter(Boolean).some(v => String(v).toLowerCase().includes(q))
@@ -3617,7 +3632,7 @@ function OrgReportContent({ onEdit }) {
                       <td>{r.address || '—'}</td>
                       <td>{r.kebele || '—'}</td>
                       <td>{r.house_no || '—'}</td>
-                      <td>{r.staff_username || '—'}</td>
+                      <td>{getRegistrationStaffLabel(r)}</td>
                       <td>{r.paid_amount != null ? `ETB ${r.paid_amount}` : '—'}</td>
                       <td>{r.payment_period_type || '—'}</td>
                       <td>
