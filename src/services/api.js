@@ -103,7 +103,7 @@ export const getApiHealthUrls = () =>
   isApiBackendConfigured() ? getUrlsToTry('/health') : [];
 
 // Allow time for a Render cold start while keeping API requests bounded.
-const fetchWithTimeout = async (url, config, ms = 30000) => {
+const fetchWithTimeout = async (url, config, ms = 120000) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), ms);
   try {
@@ -130,7 +130,7 @@ const getAuthToken = () => {
 };
 
 // API request helper (authenticated)
-const apiRequest = async (endpoint, options = {}, timeoutMs = 60000) => {
+const apiRequest = async (endpoint, options = {}, timeoutMs = 120000) => {
   const token = getAuthToken();
   
   const config = {
@@ -178,7 +178,7 @@ const apiRequest = async (endpoint, options = {}, timeoutMs = 60000) => {
   throw lastError;
 };
 // Unauthenticated API request helper
-const unauthenticatedRequest = async (endpoint, options = {}, preferredBaseUrl, timeoutMs = 60000) => {
+const unauthenticatedRequest = async (endpoint, options = {}, preferredBaseUrl, timeoutMs = 120000) => {
   const config = {
     headers: {
       'Content-Type': 'application/json',
@@ -903,7 +903,7 @@ export const liveChatAPI = {
     }),
 };
 
-const socialRequest = (endpoint, options = {}, timeoutMs = 60000) => {
+const socialRequest = (endpoint, options = {}, timeoutMs = 120000) => {
   const userToken = getLiveChatToken();
   if (!userToken) {
     throw new Error('Sign in with a registered account to use social features.');
@@ -1038,7 +1038,7 @@ export const socialAPI = {
   sendConversationMessage: async (recipientId, body, type = 'text', extra = {}) => socialRequest('/social/messages', {
     method: 'POST',
     body: JSON.stringify({ recipientId, body, type, ...extra }),
-  }, type === 'image' ? 30000 : 60000),
+  }, type === 'image' ? 30000 : 120000),
   updateMessage: async (messageId, body, caption) => socialRequest(`/social/messages/${encodeURIComponent(messageId)}`, {
     method: 'PATCH',
     body: JSON.stringify({ body, caption }),
