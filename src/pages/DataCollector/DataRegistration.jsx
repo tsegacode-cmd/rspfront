@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { userAPI, dataRegistrationAPI } from '../../services/api'
 import { useTranslation } from '../../hooks/useTranslation'
 import { useStaffList } from '../../hooks/useStaffList'
+import { getAccountAccessRole } from '../../utils/guestAccount'
 import EthiopianDateInput from '../../components/EthiopianDateInput'
 import PdfAttachmentField from './PdfAttachmentField'
 import './DataRegistration.css'
@@ -17,6 +18,23 @@ function DataRegistration() {
   
   // Use staff list hook for mobile-optimized loading
   const { staffList, loading: staffLoading, error: staffError, refresh: refreshStaff, hasStaff } = useStaffList(true)
+
+  useEffect(() => {
+    if (!['staff', 'user'].includes(getAccountAccessRole()) || !staffList.length || selectedStaff) return
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('userData') || '{}')
+      const identities = [currentUser.username, currentUser.full_name, currentUser.fullName, currentUser.id, currentUser._id]
+        .map(value => String(value || '').trim().toLowerCase())
+        .filter(Boolean)
+      const match = staffList.find(staff =>
+        [staff.username, staff.full_name, staff.fullName, staff.id, staff._id]
+          .some(value => identities.includes(String(value || '').trim().toLowerCase()))
+      )
+      if (match) setSelectedStaff(String(match.id ?? match._id))
+    } catch (error) {
+      console.error('Could not select the current registration account:', error)
+    }
+  }, [staffList, selectedStaff])
   
   const [formData, setFormData] = useState({
     clientName: '',
@@ -201,6 +219,7 @@ function DataRegistration() {
         staff_id: selectedStaff === 'other' || selectedStaff === 'all' ? null : parseInt(selectedStaff),
         staff_username: selectedStaffInfo ? selectedStaffInfo.username : (selectedStaff === 'other' ? 'Other' : 'All'),
         staff_full_name: selectedStaffInfo ? selectedStaffInfo.full_name : (selectedStaff === 'other' ? 'Other' : 'All'),
+        staff_role: selectedStaffInfo?.role || getAccountAccessRole(),
         client_name: formData.clientName,
         national_id: formData.nationalId.trim() || null,
         project_title: formData.projectTitle || null,
