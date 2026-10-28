@@ -22,6 +22,15 @@ const isUnapprovedRegistration = registration =>
   ['unapproved staff', 'unapproval staff'].includes(
     String(registration.staff_username || '').trim().toLowerCase()
   )
+const getRegistrationStaffLabel = registration => {
+  const username = String(registration?.staff_username || '').trim()
+  const fullName = String(registration?.staff_full_name || '').trim()
+  const identity = fullName && username && fullName.toLocaleLowerCase() !== username.toLocaleLowerCase()
+    ? `${fullName} (@${username})`
+    : fullName || username || 'N/A'
+  const role = String(registration?.staff_role || '').trim()
+  return role ? `${identity} · ${role}` : identity
+}
 
 const readRegistrationDocuments = registrationId => {
   try {
@@ -1290,7 +1299,7 @@ function Result() {
                           <td>{reg.kebele}</td>
                           <td>{reg.house_no || 'N/A'}</td>
                           <td>{reg.tv_no} TV</td>
-                          <td>{reg.staff_username}</td>
+                          <td>{getRegistrationStaffLabel(reg)}</td>
                           <td>
                             <span className={`badge-gov-compact ${reg.gov_letter === 'accept' ? 'accepted' : 'unaccepted'}`}>
                               {reg.gov_letter || 'N/A'}
@@ -1554,7 +1563,7 @@ function Result() {
                           <td>{reg.kebele}</td>
                           <td>{reg.house_no || 'N/A'}</td>
                           <td>{reg.tv_no} TV</td>
-                          <td>{reg.staff_username}</td>
+                          <td>{getRegistrationStaffLabel(reg)}</td>
                           <td>
                             <span className={`badge-gov-compact ${reg.gov_letter === 'accept' ? 'accepted' : 'unaccepted'}`}>
                               {reg.gov_letter || 'N/A'}
