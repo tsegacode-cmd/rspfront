@@ -21,6 +21,7 @@ const DEFAULT_REGISTRATION_EXPORT_FIELDS = [
   'staff_id',
   'staff_username',
   'staff_full_name',
+  'staff_role',
   'work_type',
   'condition',
   'sign',
