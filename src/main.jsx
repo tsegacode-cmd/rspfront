@@ -5,7 +5,6 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { PreferencesProvider } from './contexts/PreferencesContext.jsx'
 import './index.css'
 import './Responsive.css'
-import './ThemeOverrides.css'
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
