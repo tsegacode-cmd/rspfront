@@ -359,8 +359,12 @@ const assertRegistrationPayment = (response, expectedStatus, expectedAmount) => 
   if (String(response.data.payment_status || '').trim().toLowerCase() !== expectedStatus) {
     throw new Error(`The database did not save the expected ${expectedStatus} payment status.`)
   }
-  if (expectedAmount !== undefined && Number(response.data.paid_amount) !== expectedAmount) {
-    throw new Error('The database did not save the expected payment amount.')
+  if (expectedAmount !== undefined) {
+    const savedAmountInCents = Math.round((Number(response.data.paid_amount) + Number.EPSILON) * 100)
+    const expectedAmountInCents = Math.round((expectedAmount + Number.EPSILON) * 100)
+    if (savedAmountInCents !== expectedAmountInCents) {
+      throw new Error('The database did not save the expected payment amount.')
+    }
   }
 }
 
