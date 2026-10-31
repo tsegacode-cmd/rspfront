@@ -4,7 +4,7 @@
 
 .data-collect-page {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: var(--bg-light);
 }
 
 .ebc-receipt-attachments {
@@ -19,9 +19,9 @@
   width: 100%;
   box-sizing: border-box;
   padding: 12px;
-  border: 1px solid #dde3ea;
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  background: #fbfcfe;
+  background: var(--surface-color);
 }
 
 .pdf-attachment-field input[type="file"] {
@@ -29,10 +29,96 @@
   width: 100%;
   min-width: 0;
   padding: 8px;
-  border: 1px dashed #aeb8c4;
+  border: 1px dashed var(--border-color);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-color);
+  color: var(--text-dark);
   box-sizing: border-box;
+}
+
+.registration-receipt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 150px;
+}
+
+.registration-receipt-actions .ebc-btn {
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+
+.registration-receipt-error {
+  flex-basis: 100%;
+  color: #b42318;
+  font-size: .75rem;
+}
+
+.registration-receipt-overlay,
+.pdf-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, .72);
+}
+
+.registration-receipt-dialog,
+.pdf-preview-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1100px);
+  height: min(90vh, 850px);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--surface-color);
+  color: var(--text-dark);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+
+.registration-receipt-dialog > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--surface-color);
+  color: var(--text-dark);
+}
+
+.registration-receipt-dialog > header > div {
+  display: flex;
+  gap: 8px;
+}
+
+.registration-receipt-dialog iframe,
+.pdf-preview-dialog iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: var(--surface-color);
+}
+
+@media (max-width: 600px) {
+  .registration-receipt-overlay,
+  .pdf-preview-overlay {
+    padding: 8px;
+  }
+
+  .registration-receipt-dialog,
+  .pdf-preview-dialog {
+    height: calc(100dvh - 16px);
+  }
+
+  .registration-receipt-dialog > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .pdf-attachment-field input[type="file"]:disabled {
