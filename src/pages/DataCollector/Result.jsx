@@ -861,8 +861,24 @@ function Result() {
 
   const downloadExcel = (data, section, staffName) => {
     const schemaRows = completeRegistrations.concat(incompleteRegistrations)
-    const worksheet = XLSX.utils.json_to_sheet(getRegistrationExportRows(data, schemaRows))
+    const exportRows = getRegistrationExportRows(data, schemaRows)
+    const headers = Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])
+    const worksheet = XLSX.utils.json_to_sheet(exportRows, { header: headers })
+    worksheet['!cols'] = headers.map(header => ({
+      wch: Math.min(32, Math.max(14, header.length + 2)),
+    }))
+    worksheet['!autofilter'] = {
+      ref: XLSX.utils.encode_range({
+        s: { r: 0, c: 0 },
+        e: { r: exportRows.length, c: headers.length - 1 },
+      }),
+    }
     const workbook = XLSX.utils.book_new()
+    workbook.Props = {
+      Title: `REDSEA ${section} Registration Report`,
+      Subject: `Staff: ${staffName}`,
+      CreatedDate: new Date(),
+    }
     XLSX.utils.book_append_sheet(workbook, worksheet, `${section} Registrations`)
     XLSX.writeFile(workbook, `REDSEA_${section}_Report_${new Date().toISOString().split('T')[0]}.xlsx`)
     showNotification(`✓ ${section} report downloaded for ${staffName}!`, 'success')
@@ -942,7 +958,9 @@ function Result() {
       startY: 58,
       head: [headers],
       body: tableData,
-      styles: { fontSize: 5, cellPadding: 1.5, overflow: 'linebreak' },
+      horizontalPageBreak: true,
+      horizontalPageBreakRepeat: headers.slice(0, 3),
+      styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
       headStyles: { fillColor: [196, 30, 58], textColor: [255, 255, 255] },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { top: 58 }
