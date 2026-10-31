@@ -86,8 +86,8 @@ export default function PdfAttachmentField({
       )}
       {error && <div className="ebc-status-pill error" role="alert">{error}</div>}
       {viewing && value && (
-        <div role="dialog" aria-modal="true" aria-label={`View ${label}`} style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.72)', display: 'grid', placeItems: 'center', padding: 20 }}>
-          <div style={{ background: '#fff', width: 'min(100%, 1000px)', height: 'min(90vh, 800px)', borderRadius: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="pdf-preview-overlay" role="dialog" aria-modal="true" aria-label={`View ${label}`}>
+          <div className="pdf-preview-dialog">
             <div style={{ padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <strong>{label}</strong>
               <button type="button" className="ebc-btn clear" onClick={() => setViewing(false)}>Close</button>
