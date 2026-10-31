@@ -1,0 +1,119 @@
+:root:not([data-theme='dark']) {
+  color-scheme: light;
+}
+
+:root[data-theme='light'] body,
+:root[data-theme='light'] .layout,
+:root[data-theme='light'] .main-content,
+:root[data-theme='light'] main,
+:root[data-theme='light'] .data-collect-page {
+  background-color: #ffffff;
+  color: #252b33;
+}
+
+:root:not([data-theme='dark']) .data-collect-page {
+  background-color: var(--bg-light);
+}
+
+:root:not([data-theme='dark']) :is(main, .main-content) section:not([class*='hero']):not([class*='banner']):not([class*='cta']) {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
+}
+
+:root:not([data-theme='dark']) :is(
+  .card,
+  .modal-content,
+  .content-section,
+  .page-content,
+  .dashboard-content,
+  .dashboard-main,
+  .overview-section,
+  .users-section,
+  .userprofile-section,
+  .finance-section,
+  .partners-section,
+  .transactions-section,
+  .database-section,
+  .root-booked-section,
+  .root-payments-section,
+  .rpt-toolbar,
+  .rpt-table-wrap,
+  .dc-modal,
+  .dc-content-pane,
+  .dc-pane-body,
+  .settings-card,
+  .settings-info-card,
+  .staff-form-card,
+  .staff-list-card,
+  .comm-form-card,
+  .comm-list-card,
+  .home-section,
+  .home-info-card,
+  .ebc-registration-card,
+  .ebc-form-card
+) {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
+  border-color: var(--border-color);
+}
+
+:root:not([data-theme='dark']) :is(input, select, textarea) {
+  background-color: #ffffff;
+  color: var(--text-dark);
+  border-color: var(--border-color);
+  color-scheme: light;
+}
+
+:root:not([data-theme='dark']) table tbody tr:nth-child(odd) > td {
+  background-color: #f1f3f5;
+  color: var(--text-dark);
+}
+
+:root:not([data-theme='dark']) table tbody tr:nth-child(even) > td {
+  background-color: #ffffff;
+  color: var(--text-dark);
+}
+
+:root:not([data-theme='dark']) .rpt-table tbody tr.rpt-stripe-silver > td {
+  background-color: #f1f3f5;
+}
+
+:root:not([data-theme='dark']) .rpt-table tbody tr.rpt-stripe-white > td {
+  background-color: #ffffff;
+}
+
+:root:not([data-theme='dark']) .rpt-table thead tr {
+  background-color: var(--primary-color);
+}
+
+:root:not([data-theme='dark']) .rpt-table tbody tr:hover > td {
+  background-color: #e9eef3;
+}
+
+:root[data-theme='dark'] table tbody tr:nth-child(odd) > td,
+:root[data-theme='dark'] .rpt-table tbody tr.rpt-stripe-silver > td {
+  background-color: var(--surface-muted);
+  color: var(--text-dark);
+}
+
+:root[data-theme='dark'] table tbody tr:nth-child(even) > td,
+:root[data-theme='dark'] .rpt-table tbody tr.rpt-stripe-white > td {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
+}
+
+:root[data-theme='dark'] :is(
+  .rpt-toolbar,
+  .rpt-table-wrap,
+  .dc-modal,
+  .dc-content-pane,
+  .dc-pane-body
+) {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
+  border-color: var(--border-color);
+}
+
+:root[data-theme='dark'] .rpt-table tbody tr:hover > td {
+  background-color: #26364d;
+}
