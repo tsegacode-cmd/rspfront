@@ -7,7 +7,7 @@
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
-  background: linear-gradient(135deg, #8b0000, #c41e3a);
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
   box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
 }
 
@@ -22,7 +22,7 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #fff;
+  color: var(--text-light);
   cursor: pointer;
   text-align: center;
   transition: background .2s ease, transform .15s ease;
@@ -48,7 +48,8 @@
 .shb-popup {
   width: min(100%, 380px);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface-color);
+  color: var(--text-dark);
   box-shadow: 0 20px 50px rgba(0, 0, 0, .28);
   overflow: hidden;
   animation: shb-pop .18s ease;
@@ -60,23 +61,23 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  background: linear-gradient(135deg, #8b0000, #c41e3a);
-  color: #fff;
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+  color: var(--text-light);
   font-weight: 800;
 }
 .shb-popup-header button { width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(255,255,255,.2); color: #fff; font-size: 1.2rem; cursor: pointer; line-height: 1; }
 
 .shb-popup-body { padding: 12px 14px 16px; }
-.shb-empty { margin: 0 0 10px; color: #64748b; font-size: .86rem; }
+.shb-empty { margin: 0 0 10px; color: var(--text-dark); opacity: .7; font-size: .86rem; }
 .shb-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.shb-list li { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: #f6f8fb; color: #334155; font-size: .86rem; font-weight: 600; }
-.shb-avatar { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(20,35,55,.1); font-size: 1.1rem; }
+.shb-list li { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: var(--surface-muted); color: var(--text-dark); font-size: .86rem; font-weight: 600; }
+.shb-avatar { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--surface-color); box-shadow: 0 1px 4px rgba(20,35,55,.1); font-size: 1.1rem; }
 
 @media (max-width: 480px) {
   .shb-label { font-size: .62rem; }
   .shb-icon { font-size: 1.05rem; }
 }
-.shb-account-badge { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 9px; border: 1px solid #e8d0d5; border-radius: 999px; background: #fff; color: #8b1027; font-size: .76rem; font-weight: 800; white-space: nowrap; }
+.shb-account-badge { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 9px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--surface-color); color: var(--text-dark); font-size: .76rem; font-weight: 800; white-space: nowrap; }
 .shb-account-badge > span, .shb-account-badge img { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: #fce8ec; }
 .shb-account-badge.guest { animation: shb-badge-pulse 2s ease-in-out infinite; }
 .shb-account-badge.unpaid { border-color: #edc67c; background: #fff8e8; color: #80510b; }
