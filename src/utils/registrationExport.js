@@ -103,6 +103,8 @@ export const PERSONAL_REPORT_EXPORT_COLUMNS = [
   ['payment_period_type', 'Year'],
   ['payment_status', 'Status'],
   ['registered_at', 'Registered At'],
+  ['has_bank_receipt', 'Bank Receipt PDF'],
+  ['has_owner_receipt', 'Project Owner Receipt PDF'],
 ]
 
 export const ORGANIZATION_REPORT_EXPORT_COLUMNS = [
@@ -124,6 +126,8 @@ export const ORGANIZATION_REPORT_EXPORT_COLUMNS = [
   ['payment_period_type', 'Year'],
   ['payment_status', 'Status'],
   ['registered_at', 'Registered At'],
+  ['has_bank_receipt', 'Bank Receipt PDF'],
+  ['has_owner_receipt', 'Project Owner Receipt PDF'],
 ]
 
 const isPaid = record =>
@@ -149,6 +153,9 @@ const getReportExportValue = (record, field) => {
   if (field === 'paid_amount') return record?.paid_amount == null ? '—' : `ETB ${record.paid_amount}`
   if (field === 'payment_status') return isPaid(record) ? 'Paid' : 'Unpaid'
   if (field === 'registered_at') return record?.registered_at || record?.created_at || '—'
+  if (field === 'has_bank_receipt' || field === 'has_owner_receipt') {
+    return record?.[field] ? 'Available' : 'Not attached'
+  }
   const value = record?.[field]
   return value == null || value === '' ? '—' : formatExportValue(value)
 }
