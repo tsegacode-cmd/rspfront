@@ -20,7 +20,9 @@ const isLocalFrontend = () =>
   ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ||
   window.location.hostname.endsWith('.localhost');
 export const isApiBackendConfigured = () =>
-  Boolean(import.meta.env.VITE_BACKEND_CONFIGURED) || isLocalFrontend();
+  Boolean(import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_CONFIGURED) ||
+  isLocalFrontend() ||
+  (import.meta.env.PROD && window.location.protocol === 'https:');
 
 const getLiveChatAuthorizationHeader = () => {
   const token = getLiveChatToken();
@@ -57,6 +59,11 @@ export const getLiveChatAttachmentBlob = async (conversationId, messageId, devic
     }
   }
 
+  if (lastError instanceof TypeError && /fetch/i.test(lastError.message)) {
+    throw new Error(
+      `Could not reach the API backend for ${endpoint}. Check that the Render service is running and that the Vercel /api/v1 proxy is deployed.`
+    );
+  }
   throw lastError;
 };
 
@@ -70,6 +77,7 @@ const getUrlsToTry = (endpoint, preferredBaseUrl) => {
     return [
       ...(preferredBaseUrl ? [`${preferredBaseUrl.replace(/\/+$/, '')}${endpoint}`] : []),
       `${API_BASE_URL}${endpoint}`,
+      `${window.location.origin}/api/v1${endpoint}`,
     ].filter((url, idx, arr) => arr.indexOf(url) === idx);
   }
 
@@ -175,6 +183,11 @@ const apiRequest = async (endpoint, options = {}, timeoutMs = 120000) => {
     }
   }
 
+  if (lastError instanceof TypeError && /fetch/i.test(lastError.message)) {
+    throw new Error(
+      `Could not reach the API backend for ${endpoint}. Check that the Render service is running and that the Vercel /api/v1 proxy is deployed.`
+    );
+  }
   throw lastError;
 };
 // Unauthenticated API request helper
