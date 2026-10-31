@@ -24,6 +24,7 @@ import NeedApproval from './NeedApproval'
 import Result from './Result'
 import PaidRandomDataForm from './PaidRandomDataForm'
 import PdfAttachmentField from './PdfAttachmentField'
+import RegistrationReceiptActions from './RegistrationReceiptActions'
 
 import './DataCollect.css'
 
@@ -188,6 +189,11 @@ const matchesRegistrationStaffFilter = (record, filter, role, staffOptions) => {
 
 const getStaffValue = staff =>
   String(staff?.username || staff?.full_name || staff?.fullName || staff?.id || staff?._id || staff?.email || '').trim()
+
+const getStaffDatabaseId = staff => {
+  const id = staff?.id ?? staff?._id
+  return /^\d+$/.test(String(id ?? '')) ? String(id) : null
+}
 
 const getRegistrationStaffLabel = record => {
   const username = String(record?.staff_username || '').trim()
@@ -543,7 +549,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
     address:             form.address.trim(),
     house_no:            form.houseNo.trim()           || null,
     client_phone:        form.phoneNo.trim(),
-    staff_id:            selectedStaff?.id || selectedStaff?._id || null,
+    staff_id:            getStaffDatabaseId(selectedStaff),
     staff_username:      selectedStaff?.username || form.registeredStaff.trim() || 'EBC-Staff',
     staff_full_name:     selectedStaff?.full_name || selectedStaff?.fullName || form.registeredStaff.trim() || 'EBC Staff',
     staff_role:          selectedStaff?.role || getAccountAccessRole(),
@@ -2004,6 +2010,8 @@ function EbcReportTab() {
                   <th>Year</th>
                   <th onClick={() => toggleSort('payment_status')}>Status{sortIcon('payment_status')}</th>
                   <th>Registered At</th>
+                  <th>Bank Receipt PDF</th>
+                  <th>Project Owner Receipt PDF</th>
                   {canDeleteRegistrations && <th>Actions</th>}
                 </tr>
               </thead>
@@ -2038,6 +2046,8 @@ function EbcReportTab() {
                           </span>
                         </td>
                         <td>{r.registered_at || r.created_at || '—'}</td>
+                        <td><RegistrationReceiptActions registration={r} receiptType="bank" /></td>
+                        <td><RegistrationReceiptActions registration={r} receiptType="owner" /></td>
                         {canDeleteRegistrations && (
                           <td>
                             <button
@@ -2593,7 +2603,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     city: form.city.trim(),
     address: form.address.trim() || null,
     kebele: resolvedKebele,
-    staff_id: selectedStaff?.id || selectedStaff?._id || null,
+    staff_id: getStaffDatabaseId(selectedStaff),
     staff_username: selectedStaff?.username || form.registeredStaff.trim() || 'EBC-Staff',
     staff_full_name: selectedStaff?.full_name || selectedStaff?.fullName || form.registeredStaff.trim() || 'EBC Staff',
     staff_role: selectedStaff?.role || getAccountAccessRole(),
@@ -3664,6 +3674,8 @@ function OrgReportContent({ onEdit }) {
                   <th>Year</th>
                   <th>Status</th>
                   <th>Registered At</th>
+                  <th>Bank Receipt PDF</th>
+                  <th>Project Owner Receipt PDF</th>
                   {canDeleteRegistrations && <th>Actions</th>}
                 </tr>
               </thead>
@@ -3699,6 +3711,8 @@ function OrgReportContent({ onEdit }) {
                         </span>
                       </td>
                       <td>{r.registered_at || r.created_at || '—'}</td>
+                      <td><RegistrationReceiptActions registration={r} receiptType="bank" /></td>
+                      <td><RegistrationReceiptActions registration={r} receiptType="owner" /></td>
                       {canDeleteRegistrations && (
                         <td>
                           <button
