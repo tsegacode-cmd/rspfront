@@ -87,6 +87,83 @@ const EXPORT_FIELD_LABELS = {
   has_registration_image: 'Has Registration Image',
 }
 
+export const PERSONAL_REPORT_EXPORT_COLUMNS = [
+  ['receipt_no', 'Reg ID'],
+  ['round', 'Round'],
+  ['project_title', 'Project Title'],
+  ['client_name', 'Name'],
+  ['national_id', 'National ID'],
+  ['city', 'City'],
+  ['address', 'Address'],
+  ['kebele', 'Kebele'],
+  ['house_no', 'House No'],
+  ['client_phone', 'Phone'],
+  ['registered_by', 'Registered By'],
+  ['paid_amount', 'Payment'],
+  ['payment_period_type', 'Year'],
+  ['payment_status', 'Status'],
+  ['registered_at', 'Registered At'],
+]
+
+export const ORGANIZATION_REPORT_EXPORT_COLUMNS = [
+  ['receipt_no', 'Reg ID'],
+  ['round', 'Round'],
+  ['project_title', 'Project Title'],
+  ['client_name', 'Organization Name'],
+  ['national_id', 'National ID'],
+  ['org_type', 'Type'],
+  ['contact_person', 'Contact Person'],
+  ['client_phone', 'Phone'],
+  ['client_email', 'Email'],
+  ['city', 'City'],
+  ['address', 'Address'],
+  ['kebele', 'Kebele'],
+  ['house_no', 'House No'],
+  ['registered_by', 'Staff'],
+  ['paid_amount', 'Payment'],
+  ['payment_period_type', 'Year'],
+  ['payment_status', 'Status'],
+  ['registered_at', 'Registered At'],
+]
+
+const isPaid = record =>
+  String(record?.payment_status || '').trim().toLowerCase() === 'paid'
+
+const getRegisteredBy = record => {
+  const username = String(record?.staff_username || '').trim()
+  const fullName = String(record?.staff_full_name || '').trim()
+  const identity = fullName && username && fullName.toLowerCase() !== username.toLowerCase()
+    ? `${fullName} (@${username})`
+    : fullName || username || '—'
+  const role = String(record?.staff_role || '').trim()
+  return role ? `${identity} · ${role}` : identity
+}
+
+const getReportExportValue = (record, field) => {
+  if (field === 'round') return `R${record?.round || 1}`
+  if (field === 'project_title') {
+    return record?.project_title || record?.projectTitle || record?.product_title ||
+      record?.productTitle || record?.project_name || '—'
+  }
+  if (field === 'registered_by') return getRegisteredBy(record)
+  if (field === 'paid_amount') return record?.paid_amount == null ? '—' : `ETB ${record.paid_amount}`
+  if (field === 'payment_status') return isPaid(record) ? 'Paid' : 'Unpaid'
+  if (field === 'registered_at') return record?.registered_at || record?.created_at || '—'
+  const value = record?.[field]
+  return value == null || value === '' ? '—' : formatExportValue(value)
+}
+
+const getReportExportRows = (records, columns) =>
+  (records || []).map(record => Object.fromEntries(
+    columns.map(([field, label]) => [label, getReportExportValue(record, field)])
+  ))
+
+export const getPersonalReportExportRows = records =>
+  getReportExportRows(records, PERSONAL_REPORT_EXPORT_COLUMNS)
+
+export const getOrganizationReportExportRows = records =>
+  getReportExportRows(records, ORGANIZATION_REPORT_EXPORT_COLUMNS)
+
 const formatExportValue = value => {
   if (value == null) return ''
   if (value instanceof Date) return value.toISOString()
