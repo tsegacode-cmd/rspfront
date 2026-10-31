@@ -516,10 +516,23 @@ function Registered() {
   }
 
   const downloadExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      getRegistrationExportRows(filteredRegistrations, registrations)
-    )
+    const exportRows = getRegistrationExportRows(filteredRegistrations, registrations)
+    const headers = Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])
+    const worksheet = XLSX.utils.json_to_sheet(exportRows, { header: headers })
+    worksheet['!cols'] = headers.map(header => ({
+      wch: Math.min(32, Math.max(14, header.length + 2)),
+    }))
+    worksheet['!autofilter'] = {
+      ref: XLSX.utils.encode_range({
+        s: { r: 0, c: 0 },
+        e: { r: exportRows.length, c: headers.length - 1 },
+      }),
+    }
     const workbook = XLSX.utils.book_new()
+    workbook.Props = {
+      Title: 'Registered Data',
+      CreatedDate: new Date(),
+    }
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Registered Data')
     XLSX.writeFile(workbook, 'Registered_Data.xlsx')
     showNotification('✓ Excel file downloaded!', 'success')
@@ -549,7 +562,9 @@ function Registered() {
       startY: 38,
       head: [headers],
       body: tableData,
-      styles: { fontSize: 5, cellPadding: 1.5, overflow: 'linebreak' },
+      horizontalPageBreak: true,
+      horizontalPageBreakRepeat: headers.slice(0, 3),
+      styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
       headStyles: { fillColor: [196, 30, 58], textColor: [255, 255, 255] },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { top: 38 }
