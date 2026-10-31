@@ -21,6 +21,7 @@ const DEFAULT_PREFERENCES = {
 
 export const THEME_OPTIONS = [
   { value: 'light', label: 'Light' },
+  { value: 'white', label: 'White' },
   { value: 'ocean', label: 'Ocean' },
   { value: 'forest', label: 'Forest' },
   { value: 'sunset', label: 'Sunset' },
