@@ -6,6 +6,7 @@ import { useSiteContent } from '../../contexts/SiteContentContext'
 import { getAccountAccessRole } from '../../utils/guestAccount'
 import { useStaffList } from '../../hooks/useStaffList'
 import { getRegistrationExportRows } from '../../utils/registrationExport'
+import { generateNextReceiptNumber, normalizeRegistrationId } from '../../utils/registrationId'
 
 // Inline page imports — Data Menu modal
 import DataRegistration from './DataRegistration'
@@ -51,19 +52,6 @@ const REPORT_SUB_TABS = [
   { id: 'unpaid', label: 'Unpaid', icon: '⏳', color: '#e65100' },
   { id: 'total', label: 'Total', icon: '📊', color: '#1565c0' }
 ]
-
-/* ── Generate the next unused 6-digit EBC registration number ── */
-const generateRegNo = (records = [], selectedRound = 1) => {
-  const roundRecords = records.filter(record => Number(record.round || 1) === Number(selectedRound))
-  const usedNumbers = new Set(roundRecords.map(record => String(record.receipt_no || '').trim().toLocaleLowerCase()).filter(Boolean))
-  const highestNumber = roundRecords.reduce((highest, record) => {
-    const receiptNumber = String(record.receipt_no || '').trim()
-    return /^\d+$/.test(receiptNumber) ? Math.max(highest, Number(receiptNumber)) : highest
-  }, 110)
-  let nextNumber = highestNumber + 1
-  while (usedNumbers.has(String(nextNumber).padStart(6, '0').toLocaleLowerCase())) nextNumber += 1
-  return String(nextNumber).padStart(6, '0')
-}
 
 const readStoredRound = (key, fallbackKey) => {
   try {
@@ -281,27 +269,6 @@ const escapeHtml = (value) => String(value ?? '—')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;')
 
-const getRegistrationId = (record) =>
-  record.receipt_no || record.registration_id || record.registrationId || record._id || record.id || '—'
-
-const getIndividualReportRow = record => ({
-  'Reg ID': getRegistrationId(record),
-  'Round': record.round || 1,
-  'Project Title': getRegistrationProjectTitle(record) || '—',
-  'Full Name': record.client_name || '—',
-  'National ID': record.national_id || '—',
-  'City': record.city || '—',
-  'Address': record.address || '—',
-  'Kebele': record.kebele || '—',
-  'House No': record.house_no || '—',
-  'Phone': record.client_phone || '—',
-  'Staff': record.staff_username || '—',
-  'Amount (ETB)': record.paid_amount ?? '',
-  'Payment Year': record.payment_period_type || '—',
-  'Status': record.payment_status || 'unpaid',
-  'Registered At': record.registered_at || record.created_at || '—',
-})
-
 const buildReportFilename = (report, projectTitle, roundFilter, extension) => {
   const safePart = (value) => String(value || '')
     .trim()
@@ -472,7 +439,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
 
   /* ── Registration ID & Round ── */
   const [regNoAuto,  setRegNoAuto]  = useState(true)          // auto vs manual toggle
-  const [regNo,      setRegNo]      = useState(() => generateRegNo()) // current reg number
+  const [regNo,      setRegNo]      = useState(() => generateNextReceiptNumber()) // current reg number
   const [round,      setRound]      = useState(() => readStoredRound('ebc_current_round', 'ebc_default_round'))
   const roundRef = useRef(round)
   const setSelectedRound = value => {
@@ -519,7 +486,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
   }, [])
 
   useEffect(() => {
-    if (regNoAuto && !saved) setRegNo(generateRegNo(existingRecords, round))
+    if (regNoAuto && !saved) setRegNo(generateNextReceiptNumber(existingRecords, round))
   }, [existingRecords, round, regNoAuto, saved])
 
   useEffect(() => {
@@ -537,9 +504,9 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
 
   /* ── Duplicate check — receipt number or same phone + kebele + round ── */
   const findDuplicate = () => {
-    const normalizedReceiptNumber = regNo.trim().toLocaleLowerCase()
+    const normalizedReceiptNumber = normalizeRegistrationId(regNo)
     const receiptDuplicate = normalizedReceiptNumber && existingRecords.find(record =>
-      String(record.receipt_no || '').trim().toLocaleLowerCase() === normalizedReceiptNumber &&
+      normalizeRegistrationId(record.receipt_no) === normalizedReceiptNumber &&
       Number(record.round || 1) === Number(roundRef.current)
     )
     if (receiptDuplicate) return { type: 'receipt', record: receiptDuplicate }
@@ -782,7 +749,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
     setFilledFromSearch(false)
     setNameSuggestionsOpen(false)
     handleUseDefaults({ applyRound: false })
-    if (regNoAuto) setRegNo(generateRegNo(existingRecords, roundRef.current))
+    if (regNoAuto) setRegNo(generateNextReceiptNumber(existingRecords, roundRef.current))
   }
 
   /* Load defaults from localStorage */
@@ -994,7 +961,7 @@ function EbcRegistrationTab({ searchResults = [], searchNoResult = false, search
               disabled={isReadOnly || loading}
               onChange={e => {
                 setRegNoAuto(e.target.checked)
-                if (e.target.checked) setRegNo(generateRegNo(existingRecords, roundRef.current))
+                if (e.target.checked) setRegNo(generateNextReceiptNumber(existingRecords, roundRef.current))
               }}
             />
             <span>Auto-generate receipt number</span>
@@ -1729,11 +1696,14 @@ function EbcReportTab() {
       doc.text(`Generated: ${new Date().toLocaleString()}   Total: ${sorted.length}`, 14, 40)
       doc.setTextColor(0, 0, 0)
       const reportRows = getRegistrationExportRows(sorted, records)
+      const headers = Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0])
       doc.autoTable({
         startY: 45,
-        head: [Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0])],
-        body: reportRows.map(row => Object.values(row)),
-        styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' },
+        head: [headers],
+        body: reportRows.map(row => headers.map(header => row[header])),
+        horizontalPageBreak: true,
+        horizontalPageBreakRepeat: headers.slice(0, 3),
+        styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak' },
         headStyles: { fillColor: [196, 30, 58], textColor: 255, fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 245, 245] },
       })
@@ -1762,8 +1732,24 @@ function EbcReportTab() {
       const XLSX = await import('xlsx')
       const title = subTab === 'total' ? 'All Records'
                   : subTab === 'paid'  ? 'Paid Records' : 'Unpaid Records'
-      const worksheet = XLSX.utils.json_to_sheet(getRegistrationExportRows(sorted, records))
+      const reportRows = getRegistrationExportRows(sorted, records)
+      const headers = Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0])
+      const worksheet = XLSX.utils.json_to_sheet(reportRows, { header: headers })
+      worksheet['!cols'] = headers.map(header => ({
+        wch: Math.min(32, Math.max(14, header.length + 2)),
+      }))
+      worksheet['!autofilter'] = {
+        ref: XLSX.utils.encode_range({
+          s: { r: 0, c: 0 },
+          e: { r: reportRows.length, c: headers.length - 1 },
+        }),
+      }
       const workbook = XLSX.utils.book_new()
+      workbook.Props = {
+        Title: 'EBC Registration Report',
+        Subject: `${title} - ${selectedProjectTitle}`,
+        CreatedDate: new Date(),
+      }
       XLSX.utils.book_append_sheet(workbook, worksheet, 'EBC Report')
       XLSX.writeFile(workbook, buildReportFilename(title, selectedProjectTitle, roundFilter, 'xlsx'))
     } catch (exportError) {
@@ -1779,6 +1765,7 @@ function EbcReportTab() {
     const projectTitle = selectedProjectTitle
     const logo = readProjectLogoForTitle(projectFilter === 'all' ? '' : projectTitle)
     const reportRows = getRegistrationExportRows(sorted, records)
+    const headers = Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0])
 
     try {
       const htmlContent = `
@@ -1807,12 +1794,12 @@ function EbcReportTab() {
         <p class="meta">Generated: ${new Date().toLocaleString()} | Total Records: ${sorted.length}</p>
         <table>
           <thead>
-            ${Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0]).map(header => `<th>${escapeHtml(header)}</th>`).join('')}
+            <tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
           </thead>
           <tbody>
             ${reportRows.map(row => `
               <tr>
-                ${Object.values(row).map(value => `<td>${escapeHtml(value)}</td>`).join('')}
+                ${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}
               </tr>
             `).join('')}
           </tbody>
@@ -2430,7 +2417,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
   }
 
   const [regNoAuto, setRegNoAuto] = useState(true)
-  const [regNo, setRegNo] = useState(() => generateRegNo())
+  const [regNo, setRegNo] = useState(() => generateNextReceiptNumber())
   const [round, setRound] = useState(() => readStoredRound('ebc_org_current_round', 'ebc_org_default_round'))
   const roundRef = useRef(round)
   const setSelectedRound = value => {
@@ -2454,10 +2441,10 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
   const [paidAmount, setPaidAmount] = useState('')
 
   const findReceiptDuplicate = () => {
-    const receiptNumber = regNo.trim().toLocaleLowerCase()
+    const receiptNumber = normalizeRegistrationId(regNo)
     if (!receiptNumber) return null
     return existingRecords.find(record =>
-      String(record.receipt_no || '').trim().toLocaleLowerCase() === receiptNumber &&
+      normalizeRegistrationId(record.receipt_no) === receiptNumber &&
       Number(record.round || 1) === Number(roundRef.current)
     )
   }
@@ -2483,7 +2470,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
   }, [])
 
   useEffect(() => {
-    if (regNoAuto && !saved) setRegNo(generateRegNo(existingRecords, round))
+    if (regNoAuto && !saved) setRegNo(generateNextReceiptNumber(existingRecords, round))
   }, [existingRecords, round, regNoAuto, saved])
 
   useEffect(() => {
@@ -2786,7 +2773,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
     setPaidPanelOpen(false); setPaidAmount('')
     setNameSuggestionsOpen(false)
     handleUseDefaults({ applyRound: false })
-    if (regNoAuto) setRegNo(generateRegNo(existingRecords, roundRef.current))
+    if (regNoAuto) setRegNo(generateNextReceiptNumber(existingRecords, roundRef.current))
   }
 
   /* Load defaults from localStorage */
@@ -2877,7 +2864,7 @@ function OrgRegistrationContent({ editRecord, onClearEdit }) {
               disabled={isReadOnly || loading}
               onChange={e => {
                 setRegNoAuto(e.target.checked)
-                if (e.target.checked) setRegNo(generateRegNo(existingRecords, roundRef.current))
+                if (e.target.checked) setRegNo(generateNextReceiptNumber(existingRecords, roundRef.current))
               }}
             />
             <span>Auto-generate receipt number</span>
@@ -3460,11 +3447,14 @@ function OrgReportContent({ onEdit }) {
       doc.setTextColor(0, 0, 0)
       doc.text(`Project: ${selectedProjectTitle} · Round: ${roundFilter === 'all' ? 'All rounds' : roundFilter}`, 14, 32)
       doc.text(`Status: ${statusFilter === 'all' ? 'All statuses' : statusFilter} · Generated: ${new Date().toLocaleString()} · Total: ${filtered.length}`, 14, 39)
+      const headers = Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])
       doc.autoTable({
         startY: 45,
-        head: [Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])],
-        body: exportRows.map(row => Object.values(row)),
-        styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' },
+        head: [headers],
+        body: exportRows.map(row => headers.map(header => row[header])),
+        horizontalPageBreak: true,
+        horizontalPageBreakRepeat: headers.slice(0, 3),
+        styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak' },
         headStyles: { fillColor: [11, 79, 108], textColor: 255, fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 245, 245] },
       })
@@ -3478,8 +3468,23 @@ function OrgReportContent({ onEdit }) {
   const downloadOrganizationExcel = async () => {
     try {
       const XLSX = await import('xlsx')
-      const worksheet = XLSX.utils.json_to_sheet(exportRows)
+      const headers = Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])
+      const worksheet = XLSX.utils.json_to_sheet(exportRows, { header: headers })
+      worksheet['!cols'] = headers.map(header => ({
+        wch: Math.min(32, Math.max(14, header.length + 2)),
+      }))
+      worksheet['!autofilter'] = {
+        ref: XLSX.utils.encode_range({
+          s: { r: 0, c: 0 },
+          e: { r: exportRows.length, c: headers.length - 1 },
+        }),
+      }
       const workbook = XLSX.utils.book_new()
+      workbook.Props = {
+        Title: 'Organization Registration Report',
+        Subject: `${exportTitle} - ${selectedProjectTitle}`,
+        CreatedDate: new Date(),
+      }
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Organizations')
       XLSX.writeFile(workbook, buildReportFilename(exportTitle, selectedProjectTitle, roundFilter, 'xlsx'))
     } catch (exportError) {
