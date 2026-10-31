@@ -5,7 +5,12 @@ import Pagination, { getPageItems, PAGE_SIZE } from '../../components/Pagination
 import { useSiteContent } from '../../contexts/SiteContentContext'
 import { getAccountAccessRole } from '../../utils/guestAccount'
 import { useStaffList } from '../../hooks/useStaffList'
-import { getRegistrationExportRows } from '../../utils/registrationExport'
+import {
+  ORGANIZATION_REPORT_EXPORT_COLUMNS,
+  PERSONAL_REPORT_EXPORT_COLUMNS,
+  getOrganizationReportExportRows,
+  getPersonalReportExportRows,
+} from '../../utils/registrationExport'
 import { generateNextReceiptNumber, normalizeRegistrationId } from '../../utils/registrationId'
 
 // Inline page imports — Data Menu modal
@@ -1699,8 +1704,8 @@ function EbcReportTab() {
       doc.setTextColor(90, 90, 90)
       doc.text(`Generated: ${new Date().toLocaleString()}   Total: ${sorted.length}`, 14, 40)
       doc.setTextColor(0, 0, 0)
-      const reportRows = getRegistrationExportRows(sorted, records)
-      const headers = Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0])
+      const reportRows = getPersonalReportExportRows(sorted)
+      const headers = PERSONAL_REPORT_EXPORT_COLUMNS.map(([, label]) => label)
       doc.autoTable({
         startY: 45,
         head: [headers],
@@ -1736,8 +1741,8 @@ function EbcReportTab() {
       const XLSX = await import('xlsx')
       const title = subTab === 'total' ? 'All Records'
                   : subTab === 'paid'  ? 'Paid Records' : 'Unpaid Records'
-      const reportRows = getRegistrationExportRows(sorted, records)
-      const headers = Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0])
+      const reportRows = getPersonalReportExportRows(sorted)
+      const headers = PERSONAL_REPORT_EXPORT_COLUMNS.map(([, label]) => label)
       const worksheet = XLSX.utils.json_to_sheet(reportRows, { header: headers })
       worksheet['!cols'] = headers.map(header => ({
         wch: Math.min(32, Math.max(14, header.length + 2)),
@@ -1768,8 +1773,8 @@ function EbcReportTab() {
                 : subTab === 'paid'  ? 'Paid Records' : 'Unpaid Records'
     const projectTitle = selectedProjectTitle
     const logo = readProjectLogoForTitle(projectFilter === 'all' ? '' : projectTitle)
-    const reportRows = getRegistrationExportRows(sorted, records)
-    const headers = Object.keys(reportRows[0] || getRegistrationExportRows([{}])[0])
+    const reportRows = getPersonalReportExportRows(sorted)
+    const headers = PERSONAL_REPORT_EXPORT_COLUMNS.map(([, label]) => label)
 
     try {
       const htmlContent = `
@@ -3427,7 +3432,8 @@ function OrgReportContent({ onEdit }) {
     : staffOptions
 
   const exportTitle = `Organizations_${statusFilter === 'all' ? 'All_Statuses' : statusFilter}`
-  const exportRows = getRegistrationExportRows(filtered, records)
+  const exportRows = getOrganizationReportExportRows(filtered)
+  const exportHeaders = ORGANIZATION_REPORT_EXPORT_COLUMNS.map(([, label]) => label)
 
   const downloadOrganizationPDF = async () => {
     try {
@@ -3451,7 +3457,7 @@ function OrgReportContent({ onEdit }) {
       doc.setTextColor(0, 0, 0)
       doc.text(`Project: ${selectedProjectTitle} · Round: ${roundFilter === 'all' ? 'All rounds' : roundFilter}`, 14, 32)
       doc.text(`Status: ${statusFilter === 'all' ? 'All statuses' : statusFilter} · Generated: ${new Date().toLocaleString()} · Total: ${filtered.length}`, 14, 39)
-      const headers = Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])
+      const headers = exportHeaders
       doc.autoTable({
         startY: 45,
         head: [headers],
@@ -3472,7 +3478,7 @@ function OrgReportContent({ onEdit }) {
   const downloadOrganizationExcel = async () => {
     try {
       const XLSX = await import('xlsx')
-      const headers = Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])
+      const headers = exportHeaders
       const worksheet = XLSX.utils.json_to_sheet(exportRows, { header: headers })
       worksheet['!cols'] = headers.map(header => ({
         wch: Math.min(32, Math.max(14, header.length + 2)),
@@ -3499,7 +3505,7 @@ function OrgReportContent({ onEdit }) {
 
   const downloadOrganizationWord = () => {
     try {
-      const headers = Object.keys(exportRows[0] || getRegistrationExportRows([{}])[0])
+      const headers = exportHeaders
       const htmlContent = `<!DOCTYPE html>
         <html><head><meta charset="utf-8"><title>Organization Registration Report</title>
         <style>
