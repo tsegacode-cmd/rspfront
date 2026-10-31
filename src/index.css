@@ -74,6 +74,20 @@
   color-scheme: dark;
 }
 
+:root[data-theme='white'] {
+  --primary-color: #c41e3a;
+  --secondary-color: #8b0000;
+  --accent-color: #b4233c;
+  --text-dark: #111827;
+  --text-light: #ffffff;
+  --bg-light: #ffffff;
+  --bg-gray: #f1f3f5;
+  --border-color: #d1d5db;
+  --surface-color: #ffffff;
+  --surface-muted: #f1f3f5;
+  color-scheme: light;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -647,4 +661,172 @@ html {
 
 :root[data-theme='dark'] .rpt-table tbody tr:hover > td {
   background-color: #26364d;
+}
+
+:root[data-theme='white'] body,
+:root[data-theme='white'] #root,
+:root[data-theme='white'] main,
+:root[data-theme='white'] .layout,
+:root[data-theme='white'] .main-content,
+:root[data-theme='white'] [class*='page'],
+:root[data-theme='white'] [class*='content'],
+:root[data-theme='white'] [class*='section'],
+:root[data-theme='white'] [class*='modal'],
+:root[data-theme='white'] [class*='popup'],
+:root[data-theme='white'] [class*='dropdown'],
+:root[data-theme='white'] [class*='panel'],
+:root[data-theme='white'] [class*='card'],
+:root[data-theme='white'] [role='dialog'] {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
+  border-color: var(--border-color);
+}
+
+:root[data-theme='white'] main :is(h1, h2, h3, h4, h5, h6, p, li, label, small, td, th),
+:root[data-theme='white'] [role='dialog'] :is(h1, h2, h3, h4, h5, h6, p, li, label, small, td, th) {
+  color: var(--text-dark);
+}
+
+:root[data-theme='white'] :is(input, select, textarea) {
+  background-color: #ffffff;
+  color: #111827;
+  border-color: var(--border-color);
+  color-scheme: light;
+}
+
+:root[data-theme='white'] table tbody tr:nth-child(odd) > td,
+:root[data-theme='white'] [role='row']:nth-child(odd) {
+  background-color: #f1f3f5;
+  color: #111827;
+}
+
+:root[data-theme='white'] table tbody tr:nth-child(even) > td,
+:root[data-theme='white'] [role='row']:nth-child(even) {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+:root[data-theme='white'] .rpt-table tbody tr.rpt-stripe-silver > td {
+  background-color: #f1f3f5;
+}
+
+:root[data-theme='white'] .rpt-table tbody tr.rpt-stripe-white > td {
+  background-color: #ffffff;
+}
+
+:root[data-theme='white'] .rpt-table thead tr {
+  background-color: var(--primary-color);
+}
+
+:root[data-theme='white'] .rpt-table tbody tr:hover > td {
+  background-color: #e9eef3;
+}
+
+:root[data-theme='dark'] body,
+:root[data-theme='dark'] #root,
+:root[data-theme='dark'] main,
+:root[data-theme='dark'] [class*='page'],
+:root[data-theme='dark'] [class*='content'],
+:root[data-theme='dark'] [class*='section'],
+:root[data-theme='dark'] [class*='modal'],
+:root[data-theme='dark'] [class*='popup'],
+:root[data-theme='dark'] [class*='dropdown'],
+:root[data-theme='dark'] [class*='panel'],
+:root[data-theme='dark'] [class*='card'],
+:root[data-theme='dark'] [role='dialog'] {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
+  border-color: var(--border-color);
+}
+
+:root[data-theme='dark'] :is(input, select, textarea) {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
+  border-color: var(--border-color);
+  color-scheme: dark;
+}
+
+:root[data-theme='dark'] table tbody tr:nth-child(odd) > td,
+:root[data-theme='dark'] [role='row']:nth-child(odd) {
+  background-color: var(--surface-muted);
+  color: var(--text-dark);
+}
+
+:root[data-theme='dark'] table tbody tr:nth-child(even) > td,
+:root[data-theme='dark'] [role='row']:nth-child(even) {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
+}
+
+:root[data-theme='light'] body,
+:root[data-theme='light'] #root,
+:root[data-theme='light'] main,
+:root[data-theme='light'] [class*='page'],
+:root[data-theme='light'] [class*='content'],
+:root[data-theme='light'] [class*='section'],
+:root[data-theme='light'] [class*='modal'],
+:root[data-theme='light'] [class*='popup'],
+:root[data-theme='light'] [class*='dropdown'],
+:root[data-theme='light'] [class*='panel'],
+:root[data-theme='light'] [class*='card'],
+:root[data-theme='light'] [role='dialog'] {
+  color: var(--text-dark);
+  border-color: var(--border-color);
+}
+
+:root[data-theme='ocean'] body,
+:root[data-theme='ocean'] #root,
+:root[data-theme='ocean'] main,
+:root[data-theme='ocean'] [class*='page'],
+:root[data-theme='ocean'] [class*='content'],
+:root[data-theme='ocean'] [class*='section'],
+:root[data-theme='ocean'] [class*='modal'],
+:root[data-theme='ocean'] [class*='popup'],
+:root[data-theme='ocean'] [class*='dropdown'],
+:root[data-theme='ocean'] [class*='panel'],
+:root[data-theme='ocean'] [class*='card'],
+:root[data-theme='ocean'] [role='dialog'],
+:root[data-theme='forest'] body,
+:root[data-theme='forest'] #root,
+:root[data-theme='forest'] main,
+:root[data-theme='forest'] [class*='page'],
+:root[data-theme='forest'] [class*='content'],
+:root[data-theme='forest'] [class*='section'],
+:root[data-theme='forest'] [class*='modal'],
+:root[data-theme='forest'] [class*='popup'],
+:root[data-theme='forest'] [class*='dropdown'],
+:root[data-theme='forest'] [class*='panel'],
+:root[data-theme='forest'] [class*='card'],
+:root[data-theme='forest'] [role='dialog'],
+:root[data-theme='sunset'] body,
+:root[data-theme='sunset'] #root,
+:root[data-theme='sunset'] main,
+:root[data-theme='sunset'] [class*='page'],
+:root[data-theme='sunset'] [class*='content'],
+:root[data-theme='sunset'] [class*='section'],
+:root[data-theme='sunset'] [class*='modal'],
+:root[data-theme='sunset'] [class*='popup'],
+:root[data-theme='sunset'] [class*='dropdown'],
+:root[data-theme='sunset'] [class*='panel'],
+:root[data-theme='sunset'] [class*='card'],
+:root[data-theme='sunset'] [role='dialog'] {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
+  border-color: var(--border-color);
+}
+
+:root[data-theme='light'] table tbody tr:nth-child(odd) > td,
+:root[data-theme='ocean'] table tbody tr:nth-child(odd) > td,
+:root[data-theme='forest'] table tbody tr:nth-child(odd) > td,
+:root[data-theme='sunset'] table tbody tr:nth-child(odd) > td {
+  background-color: var(--surface-muted);
+  color: var(--text-dark);
+}
+
+:root[data-theme='light'] table tbody tr:nth-child(even) > td,
+:root[data-theme='ocean'] table tbody tr:nth-child(even) > td,
+:root[data-theme='forest'] table tbody tr:nth-child(even) > td,
+:root[data-theme='sunset'] table tbody tr:nth-child(even) > td {
+  background-color: var(--surface-color);
+  color: var(--text-dark);
 }
