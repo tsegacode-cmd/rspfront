@@ -2019,7 +2019,7 @@ function EbcReportTab() {
                     <>
                       <tr
                         key={rid}
-                        className={`rpt-row ${index % 2 ? 'rpt-stripe-silver' : 'rpt-stripe-white'} ${isPaid ? 'rpt-paid' : 'rpt-unpaid'} ${editId === rid ? 'rpt-editing' : ''}`}
+                        className={`rpt-row ${index % 2 ? 'rpt-stripe-white' : 'rpt-stripe-silver'} ${isPaid ? 'rpt-paid' : 'rpt-unpaid'} ${editId === rid ? 'rpt-editing' : ''}`}
                         onClick={() => setEditId(editId === rid ? null : rid)}
                         title="Click to expand edit"
                       >
@@ -3658,7 +3658,7 @@ function OrgReportContent({ onEdit }) {
                   return (
                     <tr 
                       key={r._id || r.id || i} 
-                      className={`rpt-row ${i % 2 ? 'rpt-stripe-silver' : 'rpt-stripe-white'} ${isPaid ? 'rpt-paid' : 'rpt-unpaid'} ${onEdit ? 'rpt-clickable' : ''}`}
+                      className={`rpt-row ${i % 2 ? 'rpt-stripe-white' : 'rpt-stripe-silver'} ${isPaid ? 'rpt-paid' : 'rpt-unpaid'} ${onEdit ? 'rpt-clickable' : ''}`}
                       onClick={onEdit ? () => onEdit(r) : undefined}
                       title={onEdit ? 'Click to edit this organization' : undefined}
                     >
